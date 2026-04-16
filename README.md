@@ -23,7 +23,7 @@ Sistema Django para automatizar o cálculo do módulo de gestão e o processo de
 
 2. Ajuste as variáveis do arquivo `.env` conforme necessidade.
 
-## Build e execucao com Docker
+## Build e execução com Docker
 
 1. Suba os serviços:
 
@@ -71,6 +71,6 @@ Sistema Django para automatizar o cálculo do módulo de gestão e o processo de
 ## Estrutura principal
 
 - `config/`: configuração principal do Django (settings, urls, wsgi, asgi)
-- `app/`: aplicacao principal com models, admin e migrations
+- `app/`: aplicação principal com models, admin e migrations
 - `docker-compose.yml`: orquestração dos serviços web, mysql e redis
 - `Dockerfile`: imagem da aplicação Django
