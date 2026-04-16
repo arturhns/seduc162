@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+
+{% block title %}Agentes Escolares | Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-0">Agentes Escolares</h1>
+                <small class="text-muted">Gestão completa de agentes escolares cadastrados.</small>
+            </div>
+            <a class="btn btn-success" href="{% url 'app:create' %}">
+                <i class="bi bi-plus-circle me-1"></i>Novo Agente
+            </a>
+        </div>
+
+        <form method="get" class="row g-2 mb-3">
+            <div class="col-sm-10 col-lg-8">
+                <input type="text" name="q" value="{{ search }}" class="form-control"
+                       placeholder="Buscar por nome do agente">
+            </div>
+            <div class="col-sm-2 col-lg-2 d-grid">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Buscar
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Nome completo</th>
+                    <th>Matrícula funcional</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for agente in agentes %}
+                    <tr>
+                        <td>{{ agente.nome_completo }}</td>
+                        <td>{{ agente.matricula_funcional }}</td>
+                        <td><span class="badge text-bg-info">{{ agente.status }}</span></td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'app:detail' agente.pk %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'app:update' agente.pk %}">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'app:delete' agente.pk %}">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            Nenhum agente escolar encontrado.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav aria-label="Paginação de agentes">
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ search }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_obj.number }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ search }}">Próxima</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

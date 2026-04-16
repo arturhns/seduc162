@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Agente Escolar{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h4 mb-0">Detalhes do Agente Escolar</h1>
+                    <a href="{% url 'app:list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+                </div>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Nome completo</dt>
+                    <dd class="col-sm-8">{{ agente.nome_completo }}</dd>
+
+                    <dt class="col-sm-4">Matrícula funcional</dt>
+                    <dd class="col-sm-8">{{ agente.matricula_funcional }}</dd>
+
+                    <dt class="col-sm-4">Status</dt>
+                    <dd class="col-sm-8">{{ agente.status }}</dd>
+
+                    <dt class="col-sm-4">Criado em</dt>
+                    <dd class="col-sm-8">{{ agente.criado_em }}</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <a href="{% url 'app:update' agente.pk %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-pencil-square me-1"></i>Editar
+                </a>
+                <a href="{% url 'app:delete' agente.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
