@@ -42,7 +42,7 @@
                     <tr>
                         <td>{{ agente.nome_completo }}</td>
                         <td>{{ agente.matricula_funcional }}</td>
-                        <td><span class="badge text-bg-info">{{ agente.status }}</span></td>
+                        <td><span class="badge text-bg-info">{{ agente.get_status_display }}</span></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary" href="{% url 'app:detail' agente.pk %}">
                                 <i class="bi bi-eye"></i>

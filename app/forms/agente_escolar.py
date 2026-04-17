@@ -15,5 +15,5 @@ class AgenteEscolarForm(forms.ModelForm):
         widgets = {
             "nome_completo": forms.TextInput(attrs={"class": "form-control"}),
             "matricula_funcional": forms.TextInput(attrs={"class": "form-control"}),
-            "status": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "status": forms.Select(attrs={"class": "form-select"}),
         }
