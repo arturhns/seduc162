@@ -81,17 +81,44 @@
 <div class="d-lg-flex content-wrapper">
     <aside class="sidebar p-3">
         <nav class="nav flex-column">
-            <a class="nav-link" href="#"><i class="bi bi-speedometer2 me-2"></i>Dashboard</a>
-            <a class="nav-link" href="#"><i class="bi bi-bank me-2"></i>Escolas</a>
-            <a class="nav-link {% if request.resolver_match.namespace == 'app' %}active{% endif %}"
-               href="{% url 'app:list' %}">
+            <a class="nav-link" href="#">
+                <i class="bi bi-speedometer2 me-2"></i>Dashboard
+            </a>
+            
+            <a class="nav-link {% if request.resolver_match.namespace == 'escolas' %}active{% endif %}" 
+               href="{% url 'escolas:list' %}">
+                <i class="bi bi-bank me-2"></i>Escolas
+            </a>
+            
+            <a class="nav-link {% if request.resolver_match.namespace == 'agentes_escolares' %}active{% endif %}" 
+               href="{% url 'agentes_escolares:list' %}">
                 <i class="bi bi-people-fill me-2"></i>Agentes Escolares
             </a>
-            <a class="nav-link" href="#"><i class="bi bi-briefcase-fill me-2"></i>Cargos</a>
-            <a class="nav-link" href="#"><i class="bi bi-calendar3 me-2"></i>Períodos de Processamento</a>
-            <a class="nav-link" href="#"><i class="bi bi-calculator-fill me-2"></i>Cálculo do Módulo</a>
-            <a class="nav-link" href="#"><i class="bi bi-clipboard2-check-fill me-2"></i>Designação de Gestores</a>
-            <a class="nav-link" href="#"><i class="bi bi-bar-chart-fill me-2"></i>Relatórios</a>
+            
+            <a class="nav-link" 
+               href="#">
+                <i class="bi bi-briefcase-fill me-2"></i>Cargos
+            </a>
+            
+            <a class="nav-link" 
+               href="#">
+                <i class="bi bi-calendar3 me-2"></i>Períodos de Processamento
+            </a>
+            
+            <a class="nav-link" 
+               href="#">
+                <i class="bi bi-calculator-fill me-2"></i>Cálculo do Módulo
+            </a>
+            
+            <a class="nav-link" 
+               href="#">
+                <i class="bi bi-clipboard2-check-fill me-2"></i>Designação de Gestores
+            </a>
+            
+            <a class="nav-link" 
+               href="#">
+                <i class="bi bi-bar-chart-fill me-2"></i>Relatórios
+            </a>
         </nav>
     </aside>
 

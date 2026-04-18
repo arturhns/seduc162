@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Escola{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h4 mb-0">Detalhes da Escola</h1>
+                    <a href="{% url 'escolas:list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+                </div>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Código INEP</dt>
+                    <dd class="col-sm-8">{{ escola.codigo_inep }}</dd>
+
+                    <dt class="col-sm-4">Nome</dt>
+                    <dd class="col-sm-8">{{ escola.nome }}</dd>
+
+                    <dt class="col-sm-4">Número de turnos</dt>
+                    <dd class="col-sm-8">{{ escola.numero_turnos }}</dd>
+
+                    <dt class="col-sm-4">Tipo de merenda</dt>
+                    <dd class="col-sm-8">
+                        {% if escola.tipo_merenda == 0 %}Centralizada{% elif escola.tipo_merenda == 1 %}Terceirizada{% elif escola.tipo_merenda == 2 %}Descentralizada{% else %}—{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Tipo de limpeza</dt>
+                    <dd class="col-sm-8">
+                        {% if escola.tipo_limpeza == 0 %}Centralizada{% elif escola.tipo_limpeza == 1 %}Terceirizada{% elif escola.tipo_limpeza == 2 %}Descentralizada{% else %}—{% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Professores dedicados</dt>
+                    <dd class="col-sm-8">{{ escola.professores_dedicados }}</dd>
+
+                    <dt class="col-sm-4">Modalidades</dt>
+                    <dd class="col-sm-8">
+                        {% if escola.escolamodalidade_set.all %}
+                            {% for em in escola.escolamodalidade_set.all %}
+                                <span class="badge text-bg-secondary me-1">{{ em.modalidade.nome }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Criado em</dt>
+                    <dd class="col-sm-8">{{ escola.criado_em }}</dd>
+
+                    <dt class="col-sm-4">Atualizado em</dt>
+                    <dd class="col-sm-8">{{ escola.atualizado_em }}</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <a href="{% url 'escolas:update' escola.pk %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-pencil-square me-1"></i>Editar
+                </a>
+                <a href="{% url 'escolas:delete' escola.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

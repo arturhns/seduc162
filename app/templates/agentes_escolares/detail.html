@@ -9,7 +9,7 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h1 class="h4 mb-0">Detalhes do Agente Escolar</h1>
-                    <a href="{% url 'app:list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+                    <a href="{% url 'agentes_escolares:list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
                 </div>
 
                 <dl class="row mb-0">
@@ -27,10 +27,10 @@
                 </dl>
             </div>
             <div class="card-footer bg-white d-flex gap-2">
-                <a href="{% url 'app:update' agente.pk %}" class="btn btn-primary btn-sm">
+                <a href="{% url 'agentes_escolares:update' agente.pk %}" class="btn btn-primary btn-sm">
                     <i class="bi bi-pencil-square me-1"></i>Editar
                 </a>
-                <a href="{% url 'app:delete' agente.pk %}" class="btn btn-outline-danger btn-sm">
+                <a href="{% url 'agentes_escolares:delete' agente.pk %}" class="btn btn-outline-danger btn-sm">
                     <i class="bi bi-trash me-1"></i>Excluir
                 </a>
             </div>

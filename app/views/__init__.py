@@ -5,6 +5,13 @@ from .agente_escolar import (
     AgenteEscolarListView,
     AgenteEscolarUpdateView,
 )
+from .escola import (
+    EscolaCreateView,
+    EscolaDeleteView,
+    EscolaDetailView,
+    EscolaListView,
+    EscolaUpdateView,
+)
 
 __all__ = [
     "AgenteEscolarListView",
@@ -12,4 +19,9 @@ __all__ = [
     "AgenteEscolarUpdateView",
     "AgenteEscolarDetailView",
     "AgenteEscolarDeleteView",
+    "EscolaListView",
+    "EscolaCreateView",
+    "EscolaUpdateView",
+    "EscolaDetailView",
+    "EscolaDeleteView",
 ]

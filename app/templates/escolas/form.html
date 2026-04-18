@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}Formulário de Escola{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <h1 class="h4 mb-3">
+                    {% if object %}Editar Escola{% else %}Nova Escola{% endif %}
+                </h1>
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.codigo_inep.id_for_label }}">Código INEP</label>
+                        {{ form.codigo_inep }}
+                        {% if form.codigo_inep.errors %}
+                            <div class="text-danger small">{{ form.codigo_inep.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.nome.id_for_label }}">Nome</label>
+                        {{ form.nome }}
+                        {% if form.nome.errors %}
+                            <div class="text-danger small">{{ form.nome.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.numero_turnos.id_for_label }}">Número de turnos</label>
+                        {{ form.numero_turnos }}
+                        {% if form.numero_turnos.errors %}
+                            <div class="text-danger small">{{ form.numero_turnos.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.tipo_merenda.id_for_label }}">Tipo de merenda</label>
+                        {{ form.tipo_merenda }}
+                        {% if form.tipo_merenda.errors %}
+                            <div class="text-danger small">{{ form.tipo_merenda.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.tipo_limpeza.id_for_label }}">Tipo de limpeza</label>
+                        {{ form.tipo_limpeza }}
+                        {% if form.tipo_limpeza.errors %}
+                            <div class="text-danger small">{{ form.tipo_limpeza.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.professores_dedicados.id_for_label }}">Professores dedicados</label>
+                        {{ form.professores_dedicados }}
+                        {% if form.professores_dedicados.errors %}
+                            <div class="text-danger small">{{ form.professores_dedicados.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <span class="form-label d-block">Modalidades</span>
+                        <div class="border rounded p-3 bg-light">
+                            {% for value, label in form.modalidades.field.choices %}
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           name="{{ form.modalidades.html_name }}" 
+                                           value="{{ value }}" 
+                                           id="modalidade_{{ value }}"
+                                           {% if value in form.modalidades.value %}checked{% endif %}>
+                                    <label class="form-check-label" for="modalidade_{{ value }}">
+                                        {{ label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if form.modalidades.errors %}
+                            <div class="text-danger small">{{ form.modalidades.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-1"></i>Salvar
+                        </button>
+                        <a href="{% url 'escolas:list' %}" class="btn btn-outline-secondary">
+                            Cancelar
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

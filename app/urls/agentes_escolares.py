@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import (
+from app.views import (
     AgenteEscolarCreateView,
     AgenteEscolarDeleteView,
     AgenteEscolarDetailView,
@@ -8,7 +8,8 @@ from .views import (
     AgenteEscolarUpdateView,
 )
 
-app_name = "app"
+
+app_name = "agentes_escolares"
 
 urlpatterns = [
     path("", AgenteEscolarListView.as_view(), name="list"),

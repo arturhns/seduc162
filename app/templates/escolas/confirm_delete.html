@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Excluir Agente Escolar{% endblock %}
+{% block title %}Excluir Escola{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -8,8 +8,8 @@
         <div class="card border-0 shadow-sm">
             <div class="card-body">
                 <h1 class="h5 text-danger mb-3">Confirmar exclusão</h1>
-                <p class="mb-1">Deseja realmente excluir o agente escolar abaixo?</p>
-                <p class="fw-semibold">{{ object.nome_completo }} ({{ object.matricula_funcional }})</p>
+                <p class="mb-1">Deseja realmente excluir a escola abaixo?</p>
+                <p class="fw-semibold">{{ object.nome }} (INEP {{ object.codigo_inep }})</p>
 
                 <form method="post">
                     {% csrf_token %}
@@ -17,7 +17,7 @@
                         <button type="submit" class="btn btn-danger">
                             <i class="bi bi-trash me-1"></i>Excluir
                         </button>
-                        <a href="{% url 'agentes_escolares:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <a href="{% url 'escolas:list' %}" class="btn btn-outline-secondary">Cancelar</a>
                     </div>
                 </form>
             </div>

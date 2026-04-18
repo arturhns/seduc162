@@ -29,14 +29,14 @@ class AgenteEscolarCreateView(CreateView):
     model = AgenteEscolar
     form_class = AgenteEscolarForm
     template_name = "agentes_escolares/form.html"
-    success_url = reverse_lazy("app:list")
+    success_url = reverse_lazy("agentes_escolares:list")
 
 
 class AgenteEscolarUpdateView(UpdateView):
     model = AgenteEscolar
     form_class = AgenteEscolarForm
     template_name = "agentes_escolares/form.html"
-    success_url = reverse_lazy("app:list")
+    success_url = reverse_lazy("agentes_escolares:list")
 
 
 class AgenteEscolarDetailView(DetailView):
@@ -48,4 +48,4 @@ class AgenteEscolarDetailView(DetailView):
 class AgenteEscolarDeleteView(DeleteView):
     model = AgenteEscolar
     template_name = "agentes_escolares/confirm_delete.html"
-    success_url = reverse_lazy("app:list")
+    success_url = reverse_lazy("agentes_escolares:list")
