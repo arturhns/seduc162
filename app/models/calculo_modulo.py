@@ -9,9 +9,17 @@ class CalculoModulo(models.Model):
 
     class Meta:
         db_table = "calculos_modulo"
-        constraints = [
-            models.UniqueConstraint(fields=["escola", "periodo"], name="uk_escola_periodo"),
-        ]
 
     def __str__(self) -> str:
         return f"Cálculo {self.escola} ({self.periodo})"
+
+    @classmethod
+    def get_ultimo_calculo(cls, escola, periodo):
+        """Retorna o cálculo mais recente (maior data_calculo) para a escola/período."""
+        if periodo is None:
+            return None
+        return (
+            cls.objects.filter(escola=escola, periodo=periodo)
+            .order_by("-data_calculo")
+            .first()
+        )

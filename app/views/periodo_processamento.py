@@ -9,7 +9,7 @@ class PeriodoProcessamentoListView(ListView):
     model = PeriodoProcessamento
     template_name = "periodos_processamento/list.html"
     context_object_name = "periodos_processamento"
-    paginate_by = 10
+    paginate_by = 15
 
     def get_queryset(self):
         return super().get_queryset().order_by("-data_inicio")

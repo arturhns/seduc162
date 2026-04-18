@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Cálculo de Módulo | Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-0">Listagem de Cálculo de Módulo</h1>
+                <small class="text-muted">
+                    {% if periodo_ativo %}
+                        Período ativo: {{ periodo_ativo.data_inicio|date:"d/m/Y" }} a {{ periodo_ativo.data_fim|date:"d/m/Y" }}.
+                    {% else %}
+                        Nenhum período ativo no momento.
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+
+        {% if not periodo_ativo %}
+            <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>Atenção.</strong> Não existe período ativo. Cadastre um período antes de visualizar os cálculos.
+                </div>
+            </div>
+        {% endif %}
+
+        <form method="get" class="row g-2 align-items-end mb-3" action="">
+            <div class="col-12 col-md-6 col-lg-4">
+                <label for="q" class="form-label small text-muted mb-1">Buscar por nome ou código INEP</label>
+                <input type="search" class="form-control" id="q" name="q" value="{{ busca }}"
+                       placeholder="Nome da escola ou INEP">
+            </div>
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-search me-1"></i>Filtrar
+                </button>
+                {% if busca %}
+                    <a href="{% url 'calculo_modulo:list' %}" class="btn btn-outline-secondary">Limpar</a>
+                {% endif %}
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Nome da Escola</th>
+                    <th>Código INEP</th>
+                    <th>Matrícula Ativa</th>
+                    <th>Cargos Calculados</th>
+                    <th>Status</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for calculo in calculos %}
+                    <tr>
+                        <td>{{ calculo.escola.nome }}</td>
+                        <td>{{ calculo.escola.codigo_inep }}</td>
+                        <td>
+                            {% if calculo.matricula_ativa is not None %}
+                                {{ calculo.matricula_ativa }}
+                            {% else %}
+                                <span class="text-muted">--</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if calculo.cargos_calculados == "--" %}
+                                <span class="text-muted">--</span>
+                            {% else %}
+                                {{ calculo.cargos_calculados }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if calculo.processado %}
+                                <span class="badge text-bg-success">Processado</span>
+                            {% else %}
+                                <span class="badge text-bg-warning text-dark">Pendente</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="btn btn-sm btn-outline-primary" disabled
+                                    title="Em breve">
+                                <i class="bi bi-calculator me-1"></i>Cálculo
+                            </button>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">
+                            Nenhuma escola encontrada para o filtro informado.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav aria-label="Paginação de cálculo de módulo">
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_obj.number }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca }}">Próxima</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

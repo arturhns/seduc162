@@ -10,7 +10,7 @@ class EscolaListView(ListView):
     model = Escola
     template_name = "escolas/list.html"
     context_object_name = "escolas"
-    paginate_by = 10
+    paginate_by = 15
 
     def get_queryset(self):
         queryset = (

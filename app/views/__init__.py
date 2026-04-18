@@ -12,6 +12,7 @@ from .escola import (
     EscolaListView,
     EscolaUpdateView,
 )
+from .calculo_modulo import CalculoModuloListView
 from .periodo_processamento import (
     PeriodoProcessamentoCreateView,
     PeriodoProcessamentoDeleteView,
@@ -36,4 +37,5 @@ __all__ = [
     "PeriodoProcessamentoUpdateView",
     "PeriodoProcessamentoDetailView",
     "PeriodoProcessamentoDeleteView",
+    "CalculoModuloListView",
 ]

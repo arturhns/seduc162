@@ -10,4 +10,8 @@ urlpatterns = [
         "periodos-processamento/",
         include("app.urls.periodos_processamento", namespace="periodos_processamento"),
     ),
+    path(
+        "calculo-modulo/",
+        include("app.urls.calculo_modulo", namespace="calculo_modulo"),
+    ),
 ]
