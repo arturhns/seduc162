@@ -33,8 +33,7 @@ class EscolaModalidadeAdmin(admin.ModelAdmin):
 
 @admin.register(PeriodoProcessamento)
 class PeriodoProcessamentoAdmin(admin.ModelAdmin):
-    list_display = ("data_inicio", "data_fim", "ativo", "criado_em")
-    list_filter = ("ativo",)
+    list_display = ("data_inicio", "data_fim", "criado_em")
 
 
 @admin.register(Cargo)

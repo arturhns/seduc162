@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block title %}Períodos de Processamento | Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-0">Períodos de Processamento</h1>
+                <small class="text-muted">Gestão completa dos períodos de processamento cadastrados.</small>
+            </div>
+            <a class="btn btn-success" href="{% url 'periodos_processamento:create' %}">
+                <i class="bi bi-plus-circle me-1"></i>Novo Período
+            </a>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                <tr>
+                    <th>Data de início</th>
+                    <th>Data de fim</th>
+                    <th>Situação</th>
+                    <th>Criado em</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for periodo_processamento in periodos_processamento %}
+                    <tr>
+                        <td>{{ periodo_processamento.data_inicio|date:"d/m/Y" }}</td>
+                        <td>{{ periodo_processamento.data_fim|date:"d/m/Y" }}</td>
+                        <td>
+                            {% if periodo_processamento.esta_ativo %}
+                                <span class="badge text-bg-success">Ativo</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ periodo_processamento.criado_em }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-primary" href="{% url 'periodos_processamento:detail' periodo_processamento.pk %}">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-secondary" href="{% url 'periodos_processamento:update' periodo_processamento.pk %}">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-danger" href="{% url 'periodos_processamento:delete' periodo_processamento.pk %}">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted py-4">
+                            Nenhum período de processamento encontrado.
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+            <nav aria-label="Paginação de períodos">
+                <ul class="pagination mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                        </li>
+                    {% endif %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ page_obj.number }}</span>
+                    </li>
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes do Período de Processamento{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1 class="h4 mb-0">Detalhes do Período de Processamento</h1>
+                    <a href="{% url 'periodos_processamento:list' %}" class="btn btn-outline-secondary btn-sm">Voltar</a>
+                </div>
+
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Data de início</dt>
+                    <dd class="col-sm-8">{{ periodo_processamento.data_inicio|date:"d/m/Y" }}</dd>
+
+                    <dt class="col-sm-4">Data de fim</dt>
+                    <dd class="col-sm-8">{{ periodo_processamento.data_fim|date:"d/m/Y" }}</dd>
+
+                    <dt class="col-sm-4">Situação</dt>
+                    <dd class="col-sm-8">
+                        {% if periodo_processamento.esta_ativo %}
+                            <span class="badge text-bg-success">Ativo (data atual dentro do intervalo)</span>
+                        {% else %}
+                            <span class="badge text-bg-secondary">Inativo</span>
+                        {% endif %}
+                    </dd>
+
+                    <dt class="col-sm-4">Criado em</dt>
+                    <dd class="col-sm-8">{{ periodo_processamento.criado_em }}</dd>
+                </dl>
+            </div>
+            <div class="card-footer bg-white d-flex gap-2">
+                <a href="{% url 'periodos_processamento:update' periodo_processamento.pk %}" class="btn btn-primary btn-sm">
+                    <i class="bi bi-pencil-square me-1"></i>Editar
+                </a>
+                <a href="{% url 'periodos_processamento:delete' periodo_processamento.pk %}" class="btn btn-outline-danger btn-sm">
+                    <i class="bi bi-trash me-1"></i>Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

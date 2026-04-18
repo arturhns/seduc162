@@ -12,6 +12,13 @@ from .escola import (
     EscolaListView,
     EscolaUpdateView,
 )
+from .periodo_processamento import (
+    PeriodoProcessamentoCreateView,
+    PeriodoProcessamentoDeleteView,
+    PeriodoProcessamentoDetailView,
+    PeriodoProcessamentoListView,
+    PeriodoProcessamentoUpdateView,
+)
 
 __all__ = [
     "AgenteEscolarListView",
@@ -24,4 +31,9 @@ __all__ = [
     "EscolaUpdateView",
     "EscolaDetailView",
     "EscolaDeleteView",
+    "PeriodoProcessamentoListView",
+    "PeriodoProcessamentoCreateView",
+    "PeriodoProcessamentoUpdateView",
+    "PeriodoProcessamentoDetailView",
+    "PeriodoProcessamentoDeleteView",
 ]

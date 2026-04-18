@@ -95,8 +95,8 @@
                 <i class="bi bi-people-fill me-2"></i>Agentes Escolares
             </a>
             
-            <a class="nav-link" 
-               href="#">
+            <a class="nav-link {% if request.resolver_match.namespace == 'periodos_processamento' %}active{% endif %}"
+               href="{% url 'periodos_processamento:list' %}">
                 <i class="bi bi-calendar3 me-2"></i>Períodos de Processamento
             </a>
             
