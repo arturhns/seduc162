@@ -77,7 +77,7 @@ class EscolaForm(forms.ModelForm):
         # Força "Regular" sempre no topo
         self.fields['modalidades'].queryset = Modalidade.objects.annotate(
             ordem=Case(
-                When(nome="Regular", then=0),
+                When(id=Modalidade.TIPO_REGULAR, then=0),
                 default=1,
                 output_field=IntegerField(),
             )
