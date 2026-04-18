@@ -53,15 +53,13 @@
                         {% endif %}
                     </div>
                     <div class="mb-3">
-                        <label class="form-label" for="{{ form.professores_dedicados.id_for_label }}">Professores dedicados</label>
-                        {{ form.professores_dedicados }}
-                        {% if form.professores_dedicados.errors %}
-                            <div class="text-danger small">{{ form.professores_dedicados.errors }}</div>
-                        {% endif %}
-                    </div>
-                    <div class="mb-3">
                         <span class="form-label d-block">Modalidades</span>
-                        <div class="border rounded p-3 bg-light">
+                        <div
+                            id="escola-modalidades-checkboxes"
+                            class="border rounded p-3 bg-light"
+                            data-modalidades-name="{{ form.modalidades.html_name }}"
+                            data-pei-modalidade-id="{{ form.pei_modalidade_id }}"
+                        >
                             {% for value, label in form.modalidades.field.choices %}
                                 <div class="form-check">
                                     <input class="form-check-input" 
@@ -80,6 +78,26 @@
                             <div class="text-danger small">{{ form.modalidades.errors }}</div>
                         {% endif %}
                     </div>
+                    <div id="escola-pei-options" class="mb-3 border rounded p-3 bg-light" style="display: none;">
+                        <div class="form-check mb-2">
+                            {{ form.pei_turno_diverso_tempo_parcial }}
+                            <label class="form-check-label" for="{{ form.pei_turno_diverso_tempo_parcial.id_for_label }}">
+                                {{ form.pei_turno_diverso_tempo_parcial.label }}
+                            </label>
+                            {% if form.pei_turno_diverso_tempo_parcial.errors %}
+                                <div class="text-danger small">{{ form.pei_turno_diverso_tempo_parcial.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="form-check">
+                            {{ form.pei_nove_horas }}
+                            <label class="form-check-label" for="{{ form.pei_nove_horas.id_for_label }}">
+                                {{ form.pei_nove_horas.label }}
+                            </label>
+                            {% if form.pei_nove_horas.errors %}
+                                <div class="text-danger small">{{ form.pei_nove_horas.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
 
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
@@ -94,4 +112,32 @@
         </div>
     </div>
 </div>
+<script>
+(function () {
+    var root = document.getElementById("escola-modalidades-checkboxes");
+    var peiBlock = document.getElementById("escola-pei-options");
+    if (!root || !peiBlock) return;
+
+    var name = root.getAttribute("data-modalidades-name");
+    var peiId = root.getAttribute("data-pei-modalidade-id");
+    if (!name || !peiId) return;
+
+    function peiCheckbox() {
+        return root.querySelector('input[type="checkbox"][name="' + name + '"][value="' + peiId + '"]');
+    }
+
+    function syncPeiOptions() {
+        var cb = peiCheckbox();
+        peiBlock.style.display = cb && cb.checked ? "block" : "none";
+    }
+
+    root.addEventListener("change", function (e) {
+        if (e.target && e.target.matches('input[type="checkbox"][name="' + name + '"]')) {
+            syncPeiOptions();
+        }
+    });
+
+    syncPeiOptions();
+})();
+</script>
 {% endblock %}

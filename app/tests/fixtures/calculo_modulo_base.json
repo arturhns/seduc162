@@ -1,0 +1,34 @@
+[
+  {
+    "model": "app.periodoprocessamento",
+    "pk": 1,
+    "fields": {
+      "data_inicio": "2026-01-01",
+      "data_fim": "2026-12-31",
+      "criado_em": "2026-01-01T12:00:00Z"
+    }
+  },
+  {
+    "model": "app.escola",
+    "pk": 1,
+    "fields": {
+      "codigo_inep": "FIXTURE01",
+      "nome": "Escola Base Fixture",
+      "numero_turnos": 1,
+      "tipo_merenda": 1,
+      "tipo_limpeza": 1,
+      "pei_turno_diverso_tempo_parcial": false,
+      "pei_nove_horas": false,
+      "criado_em": "2026-01-01T12:00:00Z",
+      "atualizado_em": "2026-01-01T12:00:00Z"
+    }
+  },
+  {
+    "model": "app.escolamodalidade",
+    "pk": 1,
+    "fields": {
+      "escola": 1,
+      "modalidade": 1
+    }
+  }
+]

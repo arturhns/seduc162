@@ -31,10 +31,7 @@
                     <dd class="col-sm-8">
                         {% if escola.tipo_limpeza == 0 %}Centralizada{% elif escola.tipo_limpeza == 1 %}Terceirizada{% elif escola.tipo_limpeza == 2 %}Descentralizada{% else %}—{% endif %}
                     </dd>
-
-                    <dt class="col-sm-4">Professores dedicados</dt>
-                    <dd class="col-sm-8">{{ escola.professores_dedicados }}</dd>
-
+                    
                     <dt class="col-sm-4">Modalidades</dt>
                     <dd class="col-sm-8">
                         {% if escola.escolamodalidade_set.all %}
@@ -45,6 +42,16 @@
                             <span class="text-muted">—</span>
                         {% endif %}
                     </dd>
+
+                    {% for em in escola.escolamodalidade_set.all %}
+                    {% if em.modalidade_id == em.modalidade.TIPO_PEI %}
+                    <dt class="col-sm-4">PEI - Turno diverso / Tempo parcial</dt>
+                    <dd class="col-sm-8">{% if escola.pei_turno_diverso_tempo_parcial %}Sim{% else %}Não{% endif %}</dd>
+
+                    <dt class="col-sm-4">PEI - 9 horas</dt>
+                    <dd class="col-sm-8">{% if escola.pei_nove_horas %}Sim{% else %}Não{% endif %}</dd>
+                    {% endif %}
+                    {% endfor %}
 
                     <dt class="col-sm-4">Criado em</dt>
                     <dd class="col-sm-8">{{ escola.criado_em }}</dd>

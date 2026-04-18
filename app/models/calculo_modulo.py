@@ -5,6 +5,8 @@ class CalculoModulo(models.Model):
     escola = models.ForeignKey("app.Escola", on_delete=models.PROTECT)
     periodo = models.ForeignKey("app.PeriodoProcessamento", on_delete=models.PROTECT)
     matricula_ativa = models.IntegerField()
+    professores_dedicados = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
+    matricula_cel = models.PositiveIntegerField(null=True, blank=True, default=None)
     data_calculo = models.DateTimeField(auto_now_add=True)
 
     class Meta:

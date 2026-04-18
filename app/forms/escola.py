@@ -5,10 +5,16 @@ from django.db.models import Case, When, IntegerField
 
 
 class EscolaForm(forms.ModelForm):
-    TIPO_CHOICES = (
-        (0, "Centralizada"),
-        (1, "Terceirizada"),
-        (2, "Descentralizada"),
+    MERENDA_CHOICES = (
+        (Escola.MERENDA_CENTRALIZADA, "Centralizada"),
+        (Escola.MERENDA_TERCEIRIZADA, "Terceirizada"),
+        (Escola.MERENDA_DESCENTRALIZADA, "Descentralizada"),
+    )
+
+    LIMPEZA_CHOICES = (
+        (Escola.LIMPEZA_CENTRALIZADA, "Centralizada"),
+        (Escola.LIMPEZA_TERCEIRIZADA, "Terceirizada"),
+        (Escola.LIMPEZA_DESCENTRALIZADA, "Descentralizada"),
     )
 
     NUMERO_TURNOS_CHOICES = (
@@ -32,7 +38,8 @@ class EscolaForm(forms.ModelForm):
             "numero_turnos",
             "tipo_merenda",
             "tipo_limpeza",
-            "professores_dedicados",
+            "pei_turno_diverso_tempo_parcial",
+            "pei_nove_horas",
         ]
         labels = {
             "codigo_inep": "Código INEP",
@@ -40,16 +47,22 @@ class EscolaForm(forms.ModelForm):
             "numero_turnos": "Número de turnos",
             "tipo_merenda": "Tipo de merenda",
             "tipo_limpeza": "Tipo de limpeza",
-            "professores_dedicados": "Professores dedicados",
+            "pei_turno_diverso_tempo_parcial": "PEI - Turno diverso / Tempo parcial",
+            "pei_nove_horas": "PEI - 9 horas",
         }
         widgets = {
             "codigo_inep": forms.TextInput(attrs={"class": "form-control"}),
             "nome": forms.TextInput(attrs={"class": "form-control"}),
-            "professores_dedicados": forms.NumberInput(attrs={"class": "form-control", "min": 0}),
+            "pei_turno_diverso_tempo_parcial": forms.CheckboxInput(
+                attrs={"class": "form-check-input"}
+            ),
+            "pei_nove_horas": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.pei_modalidade_id = Modalidade.TIPO_PEI
+
         self.fields["numero_turnos"] = forms.TypedChoiceField(
             label="Número de turnos",
             choices=self.NUMERO_TURNOS_CHOICES,
@@ -60,17 +73,17 @@ class EscolaForm(forms.ModelForm):
 
         self.fields["tipo_merenda"] = forms.TypedChoiceField(
             label="Tipo de merenda",
-            choices=self.TIPO_CHOICES,
+            choices=self.MERENDA_CHOICES,
             coerce=int,
-            initial=0,
+            initial=Escola.MERENDA_CENTRALIZADA,
             widget=forms.Select(attrs={"class": "form-select"}),
         )
 
         self.fields["tipo_limpeza"] = forms.TypedChoiceField(
             label="Tipo de limpeza",
-            choices=self.TIPO_CHOICES,
+            choices=self.LIMPEZA_CHOICES,
             coerce=int,
-            initial=0,
+            initial=Escola.LIMPEZA_CENTRALIZADA,
             widget=forms.Select(attrs={"class": "form-select"}),
         )
 
@@ -89,8 +102,14 @@ class EscolaForm(forms.ModelForm):
             ).distinct()
 
             self.fields["numero_turnos"].initial = self.instance.numero_turnos
-            self.fields["tipo_merenda"].initial = self.instance.tipo_merenda
-            self.fields["tipo_limpeza"].initial = self.instance.tipo_limpeza
+            merenda = int(self.instance.tipo_merenda or 0)
+            limpeza = int(self.instance.tipo_limpeza or 0)
+            self.fields["tipo_merenda"].initial = (
+                merenda if merenda in dict(self.MERENDA_CHOICES) else Escola.MERENDA_CENTRALIZADA
+            )
+            self.fields["tipo_limpeza"].initial = (
+                limpeza if limpeza in dict(self.LIMPEZA_CHOICES) else Escola.LIMPEZA_CENTRALIZADA
+            )
 
     def save(self, commit=True):
         escola = super().save(commit=commit)

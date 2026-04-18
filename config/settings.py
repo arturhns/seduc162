@@ -51,17 +51,18 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": os.getenv("DATABASE_ENGINE", "django.db.backends.mysql"),
-        "NAME": os.getenv("DATABASE_NAME", "designacao_gestores"),
-        "USER": os.getenv("DATABASE_USER", "app_user"),
-        "PASSWORD": os.getenv("DATABASE_PASSWORD", "app_password"),
-        "HOST": os.getenv("DATABASE_HOST", "mysql"),
-        "PORT": os.getenv("DATABASE_PORT", "3306"),
-        "OPTIONS": {"charset": "utf8mb4"},
-    }
+_DATABASE_ENGINE = os.getenv("DATABASE_ENGINE", "django.db.backends.mysql")
+_default_db = {
+    "ENGINE": _DATABASE_ENGINE,
+    "NAME": os.getenv("DATABASE_NAME", "designacao_gestores"),
+    "USER": os.getenv("DATABASE_USER", "app_user"),
+    "PASSWORD": os.getenv("DATABASE_PASSWORD", "app_password"),
+    "HOST": os.getenv("DATABASE_HOST", "mysql"),
+    "PORT": os.getenv("DATABASE_PORT", "3306"),
 }
+if _DATABASE_ENGINE == "django.db.backends.mysql":
+    _default_db["OPTIONS"] = {"charset": "utf8mb4"}
+DATABASES = {"default": _default_db}
 
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
