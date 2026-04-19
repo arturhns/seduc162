@@ -54,9 +54,9 @@ ASGI_APPLICATION = "config.asgi.application"
 _DATABASE_ENGINE = os.getenv("DATABASE_ENGINE", "django.db.backends.mysql")
 _default_db = {
     "ENGINE": _DATABASE_ENGINE,
-    "NAME": os.getenv("DATABASE_NAME", "designacao_gestores"),
+    "NAME": os.getenv("DATABASE_NAME", "seduc162"),
     "USER": os.getenv("DATABASE_USER", "app_user"),
-    "PASSWORD": os.getenv("DATABASE_PASSWORD", "app_password"),
+    "PASSWORD": os.getenv("DATABASE_PASSWORD", ""),
     "HOST": os.getenv("DATABASE_HOST", "mysql"),
     "PORT": os.getenv("DATABASE_PORT", "3306"),
 }

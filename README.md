@@ -68,6 +68,37 @@ Sistema Django para automatizar o cálculo do módulo de gestão e o processo de
   docker compose exec web python manage.py check
   ```
 
+## Testes
+
+Os testes automatizados ficam em `app/tests/` (por exemplo `app/tests/test_calculo_modulo.py`) e usam o runner do Django com banco de dados. Com os serviços em execução (`docker compose up`), rode-os **dentro do container** `web` para que o host do MySQL (`mysql` no Compose) esteja resolvido corretamente.
+
+- Toda a suíte da aplicação `app`:
+
+  ```bash
+  docker compose exec web python manage.py test app
+  ```
+
+- Apenas o pacote de testes:
+
+  ```bash
+  docker compose exec web python manage.py test app.tests
+  ```
+
+- Um arquivo ou caso específico (ajuste o caminho conforme o teste):
+
+  ```bash
+  docker compose exec web python manage.py test app.tests.test_calculo_modulo
+  docker compose exec web python manage.py test app.tests.test_calculo_modulo.CalculoModuloServiceTestCase
+  ```
+
+- Mais detalhe na saída (níveis 0–3):
+
+  ```bash
+  docker compose exec web python manage.py test app -v 2
+  ```
+
+Se desenvolver **fora do Docker**, use o mesmo comando `python manage.py test ...` no ambiente virtual, com `.env` apontando `DATABASE_HOST` (e demais variáveis) para a instância MySQL acessível da sua máquina.
+
 ## Estrutura principal
 
 - `config/`: configuração principal do Django (settings, urls, wsgi, asgi)
