@@ -12,6 +12,13 @@ from django.db.models import Prefetch
 from app.models import CalculoModulo, CalculoQuantidade, Cargo, Escola, EscolaModalidade, Modalidade
 
 
+@dataclass
+class CriterioExplicacao:
+    artigo: str  # ex: "Art. 1º, caput"
+    descricao: str  # ex: "Faixa 501-600 alunos"
+    impactos: list[str]  # ex: ["1 Diretor", "1 Vice-diretor", "1 CGP"]
+
+
 @dataclass(frozen=True)
 class _GestaoBase:
     diretor: int
@@ -30,11 +37,11 @@ class CalculoModuloService:
         *,
         professores_dedicados=None,
         matricula_cel=None,
-    ) -> list[CalculoQuantidade]:
+    ) -> tuple[list[CalculoQuantidade], list[CriterioExplicacao]]:
         """
-        Retorna lista de `CalculoQuantidade` (Diretor, Vice, CGP ou CGPG, AOE, ASE),
-        todas vinculadas à mesma instância **não salva** de `CalculoModulo` (escola, período,
-        matrícula). Salve primeiro o `CalculoModulo` e depois as quantidades em transação.
+        Retorna (`CalculoQuantidade`…, critérios da Resolução SEDUC 162/2025).
+        Quantidades: Diretor, Vice, CGP ou CGPG, AOE, ASE na mesma instância não salva
+        de `CalculoModulo`.
         """
         if escola.pk:
             escola = (
@@ -61,25 +68,41 @@ class CalculoModuloService:
 
         n = max(0, int(matricula_ativa))
 
-        gestao = self._gestao_base(n)
         tem_pei = Modalidade.TIPO_PEI in tipos_modalidade
         usa_cgpg = tem_pei
+        coord_abrev = "CGPG" if usa_cgpg else "CGP"
+
+        gestao, explicacoes_gestao = self._gestao_base(n, coord_abrev=coord_abrev)
 
         diretor = gestao.diretor
         vice = gestao.vice
         coords = gestao.coordenadores
 
-        coords += self._acrescimo_cgp_casa_prisional_cel(calculo, tipos_modalidade)
+        acres_cgp, explicacoes_cgp = self._acrescimo_cgp_casa_prisional_cel(
+            calculo, tipos_modalidade, coord_abrev=coord_abrev
+        )
+        coords += acres_cgp
+
+        explicacoes: list[CriterioExplicacao] = []
+        explicacoes.extend(explicacoes_gestao)
+        explicacoes.extend(explicacoes_cgp)
 
         if tem_pei and getattr(escola, "pei_turno_diverso_tempo_parcial", False):
-            av, ac = self._acrescimo_gestores_pei_parcial_diverso(n)
+            (av, ac), explicacoes_pei_td = self._acrescimo_gestores_pei_parcial_diverso(n)
             vice += av
             coords += ac
+            explicacoes.extend(explicacoes_pei_td)
 
-        aoe = self._aoe(n, tem_pei and getattr(escola, "pei_nove_horas", False))
-        aoe += self._acrescimo_aoe_casa_prisional(calculo, tipos_modalidade)
+        aoe, explicacoes_aoe = self._aoe(n, tem_pei and getattr(escola, "pei_nove_horas", False))
+        acres_aoe, explicacoes_aoe_extra = self._acrescimo_aoe_casa_prisional(
+            calculo, tipos_modalidade
+        )
+        aoe += acres_aoe
+        explicacoes.extend(explicacoes_aoe)
+        explicacoes.extend(explicacoes_aoe_extra)
 
-        ase = self._ase(escola, n)
+        ase, explicacoes_ase = self._ase(escola, n)
+        explicacoes.extend(explicacoes_ase)
 
         cargo_dir = self._cargo(Cargo.TIPO_DIRETOR)
         cargo_vice = self._cargo(Cargo.TIPO_VICE_DIRETOR)
@@ -87,13 +110,14 @@ class CalculoModuloService:
         cargo_aoe = self._cargo(Cargo.TIPO_AOE)
         cargo_ase = self._cargo(Cargo.TIPO_ASE)
 
-        return [
+        quantidades = [
             CalculoQuantidade(calculo_modulo=calculo, cargo=cargo_dir, quantidade=diretor),
             CalculoQuantidade(calculo_modulo=calculo, cargo=cargo_vice, quantidade=vice),
             CalculoQuantidade(calculo_modulo=calculo, cargo=cargo_coord, quantidade=coords),
             CalculoQuantidade(calculo_modulo=calculo, cargo=cargo_aoe, quantidade=aoe),
             CalculoQuantidade(calculo_modulo=calculo, cargo=cargo_ase, quantidade=ase),
         ]
+        return quantidades, explicacoes
 
     def _cargo(self, tipo: int) -> Cargo:
         c = Cargo.objects.filter(tipo=tipo).order_by("id").first()
@@ -112,7 +136,7 @@ class CalculoModuloService:
 
     def _quantidades_todos_zeros(
         self, calculo: CalculoModulo, tipos_modalidade: set[int]
-    ) -> list[CalculoQuantidade]:
+    ) -> tuple[list[CalculoQuantidade], list[CriterioExplicacao]]:
         _ = tipos_modalidade
         usa_cgpg = Modalidade.TIPO_PEI in tipos_modalidade
         cargos = (
@@ -122,33 +146,74 @@ class CalculoModuloService:
             Cargo.TIPO_AOE,
             Cargo.TIPO_ASE,
         )
-        return [
+        quantidades = [
             CalculoQuantidade(calculo_modulo=calculo, cargo=self._cargo(t), quantidade=0)
             for t in cargos
         ]
+        explicacoes = [
+            CriterioExplicacao(
+                artigo="Resolução SEDUC 162/2025",
+                descricao="Escola exclusivamente na modalidade CEEJA",
+                impactos=[
+                    "0 Diretor",
+                    "0 Vice-diretor",
+                    "0 CGP/CGPG",
+                    "0 AOE",
+                    "0 ASE",
+                ],
+            )
+        ]
+        return quantidades, explicacoes
 
     @staticmethod
-    def _gestao_base(n: int) -> _GestaoBase:
+    def _gestao_base(
+        n: int, *, coord_abrev: str = "CGP"
+    ) -> tuple[_GestaoBase, list[CriterioExplicacao]]:
         """Art. 1º, caput — tempo parcial / estrutura geral por faixas de matrícula ativa."""
         if n <= 200:
-            return _GestaoBase(1, 0, 1)
-        if n <= 500:
-            return _GestaoBase(1, 1, 1)
-        if n <= 600:
-            return _GestaoBase(1, 1, 2)
-        if n <= 800:
-            return _GestaoBase(1, 2, 2)
-        if n <= 1000:
-            return _GestaoBase(1, 2, 3)
-        if n <= 1100:
-            return _GestaoBase(1, 3, 3)
-        if n <= 1500:
-            return _GestaoBase(1, 3, 4)
-        return _GestaoBase(1, 3, 5)
+            base = _GestaoBase(1, 0, 1)
+            faixa = "Até 200 alunos (matrícula ativa)"
+        elif n <= 500:
+            base = _GestaoBase(1, 1, 1)
+            faixa = "De 201 a 500 alunos (matrícula ativa)"
+        elif n <= 600:
+            base = _GestaoBase(1, 1, 2)
+            faixa = "De 501 a 600 alunos (matrícula ativa)"
+        elif n <= 800:
+            base = _GestaoBase(1, 2, 2)
+            faixa = "De 601 a 800 alunos (matrícula ativa)"
+        elif n <= 1000:
+            base = _GestaoBase(1, 2, 3)
+            faixa = "De 801 a 1000 alunos (matrícula ativa)"
+        elif n <= 1100:
+            base = _GestaoBase(1, 3, 3)
+            faixa = "De 1001 a 1100 alunos (matrícula ativa)"
+        elif n <= 1500:
+            base = _GestaoBase(1, 3, 4)
+            faixa = "De 1101 a 1500 alunos (matrícula ativa)"
+        else:
+            base = _GestaoBase(1, 3, 5)
+            faixa = "Acima de 1500 alunos (matrícula ativa)"
 
-    def _acrescimo_cgp_casa_prisional_cel(self, calculo: CalculoModulo, tipos: set[int]) -> int:
+        impactos: list[str] = ["1 Diretor"]
+        if base.vice:
+            vd = "Vice-diretor" if base.vice == 1 else "Vice-diretores"
+            impactos.append(f"{base.vice} {vd}")
+        impactos.append(f"{base.coordenadores} {coord_abrev}")
+
+        explicacao = CriterioExplicacao(
+            artigo="Art. 1º, caput",
+            descricao=faixa,
+            impactos=impactos,
+        )
+        return base, [explicacao]
+
+    def _acrescimo_cgp_casa_prisional_cel(
+        self, calculo: CalculoModulo, tipos: set[int], *, coord_abrev: str = "CGP"
+    ) -> tuple[int, list[CriterioExplicacao]]:
         """Art. 1º §§ 1º a 3º — acréscimos de CGP (ou CGPG, no PEI) em coordenadores."""
         extra = 0
+        explicacoes: list[CriterioExplicacao] = []
         prof_ok = int(calculo.professores_dedicados or 0) >= 6
         tem_casa = Modalidade.TIPO_CASA in tipos
         tem_prisional = Modalidade.TIPO_SISTEMA_PRISIONAL in tipos
@@ -156,37 +221,86 @@ class CalculoModuloService:
 
         if tem_prisional and prof_ok:
             extra += 1
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 1º, §§ 1º a 3º",
+                    descricao="Modalidade sistema prisional e pelo menos 6 professores dedicados",
+                    impactos=[f"+1 {coord_abrev} (coordenação)"],
+                )
+            )
         elif tem_casa and prof_ok:
             extra += 1
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 1º, §§ 1º a 3º",
+                    descricao="Modalidade CASA e pelo menos 6 professores dedicados",
+                    impactos=[f"+1 {coord_abrev} (coordenação)"],
+                )
+            )
 
         mat_cel = int(calculo.matricula_cel or 0)
         if tem_cel and mat_cel >= 200:
             extra += 1
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 1º, §§ 1º a 3º",
+                    descricao=f"Modalidade CEL com matrícula ativa na CEL ≥ 200 (informado: {mat_cel})",
+                    impactos=[f"+1 {coord_abrev} (coordenação)"],
+                )
+            )
 
-        return extra
+        return extra, explicacoes
 
     @staticmethod
-    def _acrescimo_gestores_pei_parcial_diverso(n: int) -> tuple[int, int]:
+    def _acrescimo_gestores_pei_parcial_diverso(
+        n: int,
+    ) -> tuple[tuple[int, int], list[CriterioExplicacao]]:
         """
         Art. 1º, § 6º — acréscimo para segmento tempo parcial em PEI com turno diverso.
-        Retorna (acréscimo em vice, acréscimo em CGP/CGPG).
+        Retorna ((acréscimo em vice, acréscimo em CGP/CGPG), explicações).
         Distribuição padrão: prioriza Vice; excedente em coordenador pedagógico.
         """
         if n <= 100:
-            return (0, 0)
+            return (0, 0), []
         if n <= 200:
-            return (1, 0)
-        return (1, 1)
+            return (1, 0), [
+                CriterioExplicacao(
+                    artigo="Art. 1º, § 6º",
+                    descricao="PEI tempo parcial com turno diverso; de 101 a 200 alunos",
+                    impactos=["+1 Vice-diretor"],
+                )
+            ]
+        return (1, 1), [
+            CriterioExplicacao(
+                artigo="Art. 1º, § 6º",
+                descricao="PEI tempo parcial com turno diverso; acima de 200 alunos",
+                impactos=["+1 Vice-diretor", "+1 CGP/CGPG"],
+            )
+        ]
 
     @staticmethod
-    def _acrescimo_aoe_casa_prisional(calculo: CalculoModulo, tipos: set[int]) -> int:
+    def _acrescimo_aoe_casa_prisional(
+        calculo: CalculoModulo, tipos: set[int]
+    ) -> tuple[int, list[CriterioExplicacao]]:
         """Art. 3º §§ 2º e 3º — +1 AOE; prisional não cumulativo com CASA."""
         prof_ok = int(calculo.professores_dedicados or 0) >= 6
         if Modalidade.TIPO_SISTEMA_PRISIONAL in tipos and prof_ok:
-            return 1
+            return 1, [
+                CriterioExplicacao(
+                    artigo="Art. 3º, §§ 2º e 3º",
+                    descricao="Modalidade sistema prisional e pelo menos 6 professores dedicados",
+                    impactos=["+1 AOE"],
+                )
+            ]
         if Modalidade.TIPO_CASA in tipos and prof_ok:
-            return 1
-        return 0
+            return 1, [
+                CriterioExplicacao(
+                    artigo="Art. 3º, §§ 2º e 3º",
+                    descricao="Modalidade CASA e pelo menos 6 professores dedicados",
+                    impactos=["+1 AOE"],
+                )
+            ]
+        return 0, []
 
     @staticmethod
     def _aoe_caput(n: int) -> int:
@@ -206,11 +320,34 @@ class CalculoModuloService:
             return 20
         return 2 + (n - 1) // 80
 
-    def _aoe(self, n: int, pei_nove_horas: bool) -> int:
-        return self._aoe_pei_nove_horas(n) if pei_nove_horas else self._aoe_caput(n)
+    def _aoe(self, n: int, pei_nove_horas: bool) -> tuple[int, list[CriterioExplicacao]]:
+        if pei_nove_horas:
+            total = self._aoe_pei_nove_horas(n)
+            return total, [
+                CriterioExplicacao(
+                    artigo="Art. 3º, § 1º",
+                    descricao=(
+                        "PEI integral nove horas; lotes de 80 alunos (2 + parte inteira de (n-1)/80), "
+                        f"teto 20 AOE — matrícula ativa n = {n}"
+                    ),
+                    impactos=[f"{total} AOE"],
+                )
+            ]
+        total = self._aoe_caput(n)
+        return total, [
+            CriterioExplicacao(
+                artigo="Art. 3º, caput",
+                descricao=(
+                    "Regra geral; lotes de 120 alunos (2 + parte inteira de (n-1)/120), "
+                    f"teto 13 AOE — matrícula ativa n = {n}"
+                ),
+                impactos=[f"{total} AOE"],
+            )
+        ]
 
-    def _ase(self, escola: Escola, n: int) -> int:
+    def _ase(self, escola: Escola, n: int) -> tuple[int, list[CriterioExplicacao]]:
         """Art. 2º — ASE conforme merenda, limpeza, faixas e número de turnos."""
+        explicacoes: list[CriterioExplicacao] = []
         merenda = int(escola.tipo_merenda or 0)
         limpeza = int(escola.tipo_limpeza or 0)
         if merenda == 0:
@@ -227,24 +364,63 @@ class CalculoModuloService:
         limpeza_terc = limpeza == Escola.LIMPEZA_TERCEIRIZADA
 
         if limpeza_terc and merenda_terc_ou_desc:
-            return 0
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 2º",
+                    descricao="Limpeza terceirizada e merenda terceirizada ou descentralizada (dispensa de ASE)",
+                    impactos=["0 ASE"],
+                )
+            )
+            return 0, explicacoes
 
-        base = 0
+        art_paragrafo = ""
+        desc_base = ""
         if merenda == Escola.MERENDA_CENTRALIZADA and limpeza == Escola.LIMPEZA_CENTRALIZADA:
-            base = self._ase_merenda_cent_limpeza_cent(n)
+            base_sem_turno = self._ase_merenda_cent_limpeza_cent(n)
+            art_paragrafo = "Art. 2º, § 1º"
+            desc_base = "Merenda centralizada e limpeza centralizada — faixa por matrícula ativa"
         elif merenda_terc_ou_desc and limpeza == Escola.LIMPEZA_CENTRALIZADA:
-            base = self._ase_merenda_terc_desc_limpeza_cent(n)
+            base_sem_turno = self._ase_merenda_terc_desc_limpeza_cent(n)
+            art_paragrafo = "Art. 2º, § 4º"
+            desc_base = "Merenda terceirizada ou descentralizada e limpeza centralizada — faixa por matrícula ativa"
         elif merenda == Escola.MERENDA_CENTRALIZADA and limpeza_terc:
-            base = self._ase_merenda_cent_limpeza_terc(n)
+            base_sem_turno = self._ase_merenda_cent_limpeza_terc(n)
+            art_paragrafo = "Art. 2º, § 7º"
+            desc_base = "Merenda centralizada e limpeza terceirizada — faixa por matrícula ativa"
         else:
-            base = self._ase_merenda_cent_limpeza_cent(n)
+            base_sem_turno = self._ase_merenda_cent_limpeza_cent(n)
+            art_paragrafo = "Art. 2º, § 1º (combinado não previsto; aplicação da tabela § 1º)"
+            desc_base = "Demais combinações merenda/limpeza tratadas como § 1º — faixa por matrícula ativa"
+
+        base = base_sem_turno
+        explicacoes.append(
+            CriterioExplicacao(
+                artigo=art_paragrafo,
+                descricao=f"{desc_base} (n = {n})",
+                impactos=[f"{base_sem_turno} ASE"],
+            )
+        )
 
         if turnos == 2:
             base += 1
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 2º",
+                    descricao="Dois turnos de funcionamento",
+                    impactos=["+1 ASE"],
+                )
+            )
         elif turnos == 3:
             base += 2
+            explicacoes.append(
+                CriterioExplicacao(
+                    artigo="Art. 2º",
+                    descricao="Três turnos de funcionamento",
+                    impactos=["+2 ASE"],
+                )
+            )
 
-        return base
+        return base, explicacoes
 
     @staticmethod
     def _ase_merenda_cent_limpeza_cent(n: int) -> int:

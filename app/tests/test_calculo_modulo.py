@@ -97,13 +97,14 @@ class CalculoModuloServiceTestCase(TestCase):
         professores_dedicados=None,
         matricula_cel=None,
     ):
-        return CalculoModuloService().calcular(
+        qtds, _explicacoes = CalculoModuloService().calcular(
             escola,
             matricula_ativa,
             self.periodo,
             professores_dedicados=professores_dedicados,
             matricula_cel=matricula_cel,
         )
+        return qtds
 
     # --- Smoke / estrutura ---
 
