@@ -25,5 +25,29 @@ class Escola(models.Model):
         db_table = "escolas"
         indexes = [models.Index(fields=["ultimo_calculo_modulo"], name="idx_ultimo_calculo")]
 
+    @property
+    def rotulo_tipo_merenda(self) -> str:
+        m = int(self.tipo_merenda or 0)
+        if m == 0:
+            m = self.MERENDA_CENTRALIZADA
+        rotulos = {
+            self.MERENDA_CENTRALIZADA: "Centralizada",
+            self.MERENDA_TERCEIRIZADA: "Terceirizada",
+            self.MERENDA_DESCENTRALIZADA: "Descentralizada",
+        }
+        return rotulos.get(m, "—")
+
+    @property
+    def rotulo_tipo_limpeza(self) -> str:
+        valor = int(self.tipo_limpeza or 0)
+        if valor == 0:
+            valor = self.LIMPEZA_CENTRALIZADA
+        rotulos = {
+            self.LIMPEZA_CENTRALIZADA: "Centralizada",
+            self.LIMPEZA_TERCEIRIZADA: "Terceirizada",
+            self.LIMPEZA_DESCENTRALIZADA: "Descentralizada",
+        }
+        return rotulos.get(valor, "—")
+
     def __str__(self) -> str:
         return f"{self.codigo_inep} - {self.nome}"

@@ -5,6 +5,7 @@ Cálculo do módulo de gestão e administrativo conforme Resolução SEDUC nº 1
 from __future__ import annotations
 
 from dataclasses import dataclass
+from collections.abc import Callable
 from typing import Iterator
 
 from django.db.models import Prefetch
@@ -28,6 +29,89 @@ class _GestaoBase:
 
 class CalculoModuloService:
     """Serviço de cálculo do módulo (gestão + administrativo) — Resolução SEDUC 162/2025."""
+
+    @staticmethod
+    def _trecho_faixa_alunos(n_min: int, n_max: int | None) -> str:
+        if n_max is None:
+            return f"a partir de {n_min} alunos."
+        if n_min <= 1:
+            return f"até {n_max} alunos."
+        return f"de {n_min} a {n_max} alunos."
+
+    @classmethod
+    def _frase_faixa_matricula(cls, n_min: int, n_max: int | None) -> str:
+        trecho = cls._trecho_faixa_alunos(n_min, n_max)
+        if trecho:
+            trecho = trecho[0].upper() + trecho[1:]
+        return trecho
+
+    @classmethod
+    def _intervalo_ase_sec1_sec4(cls, n: int) -> tuple[int, int | None]:
+        if n <= 210:
+            return (1, 210)
+        if n <= 630:
+            return (211, 630)
+        if n <= 1050:
+            return (631, 1050)
+        if n <= 1290:
+            return (1051, 1290)
+        if n <= 1530:
+            return (1291, 1530)
+        return (1531, None)
+
+    @classmethod
+    def _intervalo_ase_sec7(cls, n: int) -> tuple[int, int | None]:
+        if n <= 300:
+            return (1, 300)
+        if n <= 900:
+            return (301, 900)
+        if n <= 1200:
+            return (901, 1200)
+        if n <= 1500:
+            return (1201, 1500)
+        if n <= 1740:
+            return (1501, 1740)
+        return (1741, None)
+
+    @classmethod
+    def _desc_ase_com_rubrica(
+        cls,
+        rubrica: str,
+        n: int,
+        intervalo_fn: Callable[[int], tuple[int, int | None]],
+    ) -> str:
+        lo, hi = intervalo_fn(n)
+        trecho = cls._trecho_faixa_alunos(lo, hi)
+        if trecho:
+            trecho = trecho[0] + trecho[1:]
+        return f"{rubrica}, {trecho}"
+
+    @classmethod
+    def _desc_aoe_caput(cls, n: int) -> str:
+        if n <= 0:
+            return "Não foi informado total de matrícula ativa (ou o total é zero), então não há AOE por esta regra."
+        if n >= 1321:
+            return "Situação em que se aplica o teto de AOE da regra geral."
+        k = (n - 1) // 120
+        n_min = k * 120 + 1
+        n_max = (k + 1) * 120
+        return cls._frase_faixa_matricula(n_min, n_max)
+
+    @classmethod
+    def _desc_aoe_pei_nove_horas(cls, n: int) -> str:
+        if n <= 0:
+            return "Não foi informado total de matrícula ativa (ou o total é zero), então não há AOE por esta regra."
+        if n >= 1441:
+            return (
+                "Situação em que se aplica o teto de AOE para escolas PEI com jornada de 9 horas."
+            )
+        k = (n - 1) // 80
+        n_min = k * 80 + 1
+        n_max = (k + 1) * 80
+        return (
+            "Escola em PEI com jornada de 9 horas; "
+            + cls._frase_faixa_matricula(n_min, n_max)
+        )
 
     def calcular(
         self,
@@ -120,9 +204,9 @@ class CalculoModuloService:
         return quantidades, explicacoes
 
     def _cargo(self, tipo: int) -> Cargo:
-        c = Cargo.objects.filter(tipo=tipo).order_by("id").first()
+        c = Cargo.objects.filter(pk=tipo).order_by("id").first()
         if c is None:
-            raise ValueError(f"Cargo com tipo={tipo} não cadastrado na tabela `cargos`.")
+            raise ValueError(f"Cargo com id={tipo} não cadastrado na tabela `cargos`.")
         return c
 
     def _tipos_modalidade_escola(self, escola: Escola) -> Iterator[int]:
@@ -153,7 +237,10 @@ class CalculoModuloService:
         explicacoes = [
             CriterioExplicacao(
                 artigo="Resolução SEDUC 162/2025",
-                descricao="Escola exclusivamente na modalidade CEEJA",
+                descricao=(
+                    "A unidade está somente na modalidade CEEJA; nesta situação o módulo não prevê "
+                    "cargos de gestão nem de apoio administrativo para esta contagem."
+                ),
                 impactos=[
                     "0 Diretor",
                     "0 Vice-diretor",
@@ -172,28 +259,28 @@ class CalculoModuloService:
         """Art. 1º, caput — tempo parcial / estrutura geral por faixas de matrícula ativa."""
         if n <= 200:
             base = _GestaoBase(1, 0, 1)
-            faixa = "Até 200 alunos (matrícula ativa)"
+            faixa = "Até 200 alunos."
         elif n <= 500:
             base = _GestaoBase(1, 1, 1)
-            faixa = "De 201 a 500 alunos (matrícula ativa)"
+            faixa = "De 201 a 500 alunos."
         elif n <= 600:
             base = _GestaoBase(1, 1, 2)
-            faixa = "De 501 a 600 alunos (matrícula ativa)"
+            faixa = "De 501 a 600 alunos."
         elif n <= 800:
             base = _GestaoBase(1, 2, 2)
-            faixa = "De 601 a 800 alunos (matrícula ativa)"
+            faixa = "De 601 a 800 alunos."
         elif n <= 1000:
             base = _GestaoBase(1, 2, 3)
-            faixa = "De 801 a 1000 alunos (matrícula ativa)"
+            faixa = "De 801 a 1000 alunos."
         elif n <= 1100:
             base = _GestaoBase(1, 3, 3)
-            faixa = "De 1001 a 1100 alunos (matrícula ativa)"
+            faixa = "De 1001 a 1100 alunos."
         elif n <= 1500:
             base = _GestaoBase(1, 3, 4)
-            faixa = "De 1101 a 1500 alunos (matrícula ativa)"
+            faixa = "De 1101 a 1500 alunos."
         else:
             base = _GestaoBase(1, 3, 5)
-            faixa = "Acima de 1500 alunos (matrícula ativa)"
+            faixa = "Mais de 1500 alunos."
 
         impactos: list[str] = ["1 Diretor"]
         if base.vice:
@@ -224,7 +311,10 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 1º, §§ 1º a 3º",
-                    descricao="Modalidade sistema prisional e pelo menos 6 professores dedicados",
+                    descricao=(
+                        "Há ensino no sistema prisional e foram informados pelo menos seis professores "
+                        "dedicados à unidade."
+                    ),
                     impactos=[f"+1 {coord_abrev} (coordenação)"],
                 )
             )
@@ -233,7 +323,9 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 1º, §§ 1º a 3º",
-                    descricao="Modalidade CASA e pelo menos 6 professores dedicados",
+                    descricao=(
+                        "Há modalidade CASA e foram informados pelo menos seis professores dedicados à unidade."
+                    ),
                     impactos=[f"+1 {coord_abrev} (coordenação)"],
                 )
             )
@@ -244,7 +336,9 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 1º, §§ 1º a 3º",
-                    descricao=f"Modalidade CEL com matrícula ativa na CEL ≥ 200 (informado: {mat_cel})",
+                    descricao=(
+                        "Há modalidade CEL e o número de alunos informado para a CEL é pelo menos 200."
+                    ),
                     impactos=[f"+1 {coord_abrev} (coordenação)"],
                 )
             )
@@ -266,14 +360,20 @@ class CalculoModuloService:
             return (1, 0), [
                 CriterioExplicacao(
                     artigo="Art. 1º, § 6º",
-                    descricao="PEI tempo parcial com turno diverso; de 101 a 200 alunos",
+                    descricao=(
+                        "PEI com turnos diferentes e parte dos alunos em tempo parcial; "
+                        f"{CalculoModuloService._frase_faixa_matricula(101, 200)}"
+                    ),
                     impactos=["+1 Vice-diretor"],
                 )
             ]
         return (1, 1), [
             CriterioExplicacao(
                 artigo="Art. 1º, § 6º",
-                descricao="PEI tempo parcial com turno diverso; acima de 200 alunos",
+                descricao=(
+                    "PEI com turnos diferentes e parte dos alunos em tempo parcial; "
+                    f"{CalculoModuloService._frase_faixa_matricula(201, None)}"
+                ),
                 impactos=["+1 Vice-diretor", "+1 CGP/CGPG"],
             )
         ]
@@ -288,7 +388,10 @@ class CalculoModuloService:
             return 1, [
                 CriterioExplicacao(
                     artigo="Art. 3º, §§ 2º e 3º",
-                    descricao="Modalidade sistema prisional e pelo menos 6 professores dedicados",
+                    descricao=(
+                        "Há ensino no sistema prisional e foram informados pelo menos seis professores "
+                        "dedicados à unidade."
+                    ),
                     impactos=["+1 AOE"],
                 )
             ]
@@ -296,7 +399,9 @@ class CalculoModuloService:
             return 1, [
                 CriterioExplicacao(
                     artigo="Art. 3º, §§ 2º e 3º",
-                    descricao="Modalidade CASA e pelo menos 6 professores dedicados",
+                    descricao=(
+                        "Há modalidade CASA e foram informados pelo menos seis professores dedicados à unidade."
+                    ),
                     impactos=["+1 AOE"],
                 )
             ]
@@ -326,10 +431,7 @@ class CalculoModuloService:
             return total, [
                 CriterioExplicacao(
                     artigo="Art. 3º, § 1º",
-                    descricao=(
-                        "PEI integral nove horas; lotes de 80 alunos (2 + parte inteira de (n-1)/80), "
-                        f"teto 20 AOE — matrícula ativa n = {n}"
-                    ),
+                    descricao=self._desc_aoe_pei_nove_horas(n),
                     impactos=[f"{total} AOE"],
                 )
             ]
@@ -337,10 +439,7 @@ class CalculoModuloService:
         return total, [
             CriterioExplicacao(
                 artigo="Art. 3º, caput",
-                descricao=(
-                    "Regra geral; lotes de 120 alunos (2 + parte inteira de (n-1)/120), "
-                    f"teto 13 AOE — matrícula ativa n = {n}"
-                ),
+                descricao=self._desc_aoe_caput(n),
                 impactos=[f"{total} AOE"],
             )
         ]
@@ -367,36 +466,59 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 2º",
-                    descricao="Limpeza terceirizada e merenda terceirizada ou descentralizada (dispensa de ASE)",
+                    descricao=(
+                        "Limpeza feita por empresa terceirizada e merenda terceirizada ou preparada na própria "
+                        "escola (descentralizada); nessa combinação não há ASE neste cálculo."
+                    ),
                     impactos=["0 ASE"],
                 )
             )
             return 0, explicacoes
 
         art_paragrafo = ""
-        desc_base = ""
+        descricao = ""
         if merenda == Escola.MERENDA_CENTRALIZADA and limpeza == Escola.LIMPEZA_CENTRALIZADA:
             base_sem_turno = self._ase_merenda_cent_limpeza_cent(n)
             art_paragrafo = "Art. 2º, § 1º"
-            desc_base = "Merenda centralizada e limpeza centralizada — faixa por matrícula ativa"
+            descricao = self._desc_ase_com_rubrica(
+                "Merenda centralizada na escola e limpeza também centralizada",
+                n,
+                self._intervalo_ase_sec1_sec4,
+            )
         elif merenda_terc_ou_desc and limpeza == Escola.LIMPEZA_CENTRALIZADA:
             base_sem_turno = self._ase_merenda_terc_desc_limpeza_cent(n)
             art_paragrafo = "Art. 2º, § 4º"
-            desc_base = "Merenda terceirizada ou descentralizada e limpeza centralizada — faixa por matrícula ativa"
+            descricao = self._desc_ase_com_rubrica(
+                "Merenda terceirizada ou preparada na própria escola (descentralizada), com limpeza centralizada",
+                n,
+                self._intervalo_ase_sec1_sec4,
+            )
         elif merenda == Escola.MERENDA_CENTRALIZADA and limpeza_terc:
             base_sem_turno = self._ase_merenda_cent_limpeza_terc(n)
             art_paragrafo = "Art. 2º, § 7º"
-            desc_base = "Merenda centralizada e limpeza terceirizada — faixa por matrícula ativa"
+            descricao = self._desc_ase_com_rubrica(
+                "Merenda centralizada na escola e limpeza feita por empresa terceirizada",
+                n,
+                self._intervalo_ase_sec7,
+            )
         else:
             base_sem_turno = self._ase_merenda_cent_limpeza_cent(n)
             art_paragrafo = "Art. 2º, § 1º (combinado não previsto; aplicação da tabela § 1º)"
-            desc_base = "Demais combinações merenda/limpeza tratadas como § 1º — faixa por matrícula ativa"
+            descricao = (
+                "A combinação informada de merenda e limpeza não aparece em um quadro próprio; "
+                "por isso usamos o mesmo critério da merenda e limpeza centralizadas. "
+                + self._desc_ase_com_rubrica(
+                    "Merenda centralizada na escola e limpeza também centralizada",
+                    n,
+                    self._intervalo_ase_sec1_sec4,
+                )
+            )
 
         base = base_sem_turno
         explicacoes.append(
             CriterioExplicacao(
                 artigo=art_paragrafo,
-                descricao=f"{desc_base} (n = {n})",
+                descricao=descricao,
                 impactos=[f"{base_sem_turno} ASE"],
             )
         )
@@ -406,7 +528,7 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 2º",
-                    descricao="Dois turnos de funcionamento",
+                    descricao="A escola funciona em dois turnos; isso aumenta o ASE em uma vaga.",
                     impactos=["+1 ASE"],
                 )
             )
@@ -415,7 +537,7 @@ class CalculoModuloService:
             explicacoes.append(
                 CriterioExplicacao(
                     artigo="Art. 2º",
-                    descricao="Três turnos de funcionamento",
+                    descricao="A escola funciona em três turnos; isso aumenta o ASE em duas vagas.",
                     impactos=["+2 ASE"],
                 )
             )

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+
+{% block title %}Cálculo do Módulo | {{ escola.nome }} | Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-xl-10">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+                    <div class="col-12 col-md-9">
+                        <h1 class="h4 mb-1">Cálculo do Módulo</h1>
+                        <p class="text-muted small mb-0">
+                            {{ escola.nome }} — INEP {{ escola.codigo_inep }}
+                        </p>
+                        <div class="rounded border bg-light px-3 py-2 mt-2 small">
+                            <div class="row g-2 row-cols-1 row-cols-sm-4">                                
+                                {% if modalidades_escola_nomes or rotulos_pei_extra_topo %}
+                                <div class="col">
+                                    <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Modalidades</div>
+                                    <div class="fw-semibold">
+                                        <div class="d-flex flex-wrap align-items-center gap-1 mt-1">
+                                            {% for nome in modalidades_escola_nomes %}
+                                                <span class="badge rounded-pill text-bg-secondary">{{ nome }}</span>
+                                            {% endfor %}
+                                            {% for rotulo in rotulos_pei_extra_topo %}
+                                                <span class="badge rounded-pill text-bg-info text-dark">{{ rotulo }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endif %}
+                                <div class="col">
+                                    <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Número de turnos</div>
+                                    <div class="fw-semibold">{{ escola.numero_turnos }}</div>
+                                </div>
+                                <div class="col">
+                                    <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Tipo de merenda</div>
+                                    <div class="fw-semibold">{{ escola.rotulo_tipo_merenda }}</div>
+                                </div>
+                                <div class="col">
+                                    <div class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.02em;">Tipo de limpeza</div>
+                                    <div class="fw-semibold">{{ escola.rotulo_tipo_limpeza }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <a href="{% url 'calculo_modulo:list' %}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i>Voltar à listagem
+                    </a>
+                </div>
+
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} mb-3" role="alert">{{ message }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                {% if not periodo_ativo %}
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong>Atenção.</strong> Não existe período de processamento ativo. Não é possível calcular ou salvar o módulo neste momento.
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if modo_resultado %}
+                    <h2 class="h5 mt-4 mb-2">Cargos calculados</h2>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Cargo</th>
+                                <th class="text-end">Quantidade</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for q in quantidades %}
+                                <tr>
+                                    <td>{{ q.cargo.nome }}{% if q.cargo.abreviacao %} ({{ q.cargo.abreviacao }}){% endif %}</td>
+                                    <td class="text-end">{{ q.quantidade }}</td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h2 class="h5 mb-2">Critérios e efeitos</h2>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-light">
+                            <tr>
+                                <th>Artigo</th>
+                                <th>Descrição</th>
+                                <th>Efeitos</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {% for ex in explicacoes %}
+                                <tr>
+                                    <td class="text-nowrap">{{ ex.artigo }}</td>
+                                    <td>{{ ex.descricao }}</td>
+                                    <td>
+                                        <ul class="mb-0 ps-3">
+                                            {% for imp in ex.impactos %}
+                                                <li>{{ imp }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if diferencas_cargos %}
+                        <h2 class="h5 mb-2">Diferenças em relação ao cálculo anterior</h2>
+                        <div class="table-responsive mb-4">
+                            <table class="table table-sm table-bordered align-middle">
+                                <thead class="table-light">
+                                <tr>
+                                    <th>Cargo</th>
+                                    <th class="text-end">Anterior</th>
+                                    <th class="text-end">Novo</th>
+                                    <th class="text-end">Variação</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {% for d in diferencas_cargos %}
+                                    <tr>
+                                        <td>{{ d.cargo.nome }}{% if d.cargo.abreviacao %} ({{ d.cargo.abreviacao }}){% endif %}</td>
+                                        <td class="text-end">{{ d.anterior }}</td>
+                                        <td class="text-end">{{ d.novo }}</td>
+                                        <td class="text-end">
+                                            {% if d.delta > 0 %}
+                                                <span class="text-success">+{{ d.delta }}</span>
+                                            {% elif d.delta < 0 %}
+                                                <span class="text-danger">{{ d.delta }}</span>
+                                            {% else %}
+                                                0
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if periodo_ativo %}
+                    <h2 class="h5 {% if modo_resultado %}mt-4{% endif %} mb-3">
+                        {% if modo_resultado %}Dados da simulação{% else %}Dados de entrada{% endif %}
+                    </h2>
+                    <form method="post" novalidate>
+                        {% csrf_token %}
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                        {% endif %}
+
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.matricula_ativa.id_for_label }}">{{ form.matricula_ativa.label }}</label>
+                            {{ form.matricula_ativa }}
+                            {% if form.matricula_ativa.errors %}
+                                <div class="text-danger small">{{ form.matricula_ativa.errors }}</div>
+                            {% endif %}
+                        </div>
+
+                        {% if mostra_casa %}
+                            <div class="mb-3">
+                                <label class="form-label" for="{{ form.professores_dedicados.id_for_label }}">{{ form.professores_dedicados.label }}</label>
+                                {{ form.professores_dedicados }}
+                                {% if form.professores_dedicados.errors %}
+                                    <div class="text-danger small">{{ form.professores_dedicados.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        {% if mostra_cel %}
+                            <div class="mb-3">
+                                <label class="form-label" for="{{ form.matricula_cel.id_for_label }}">{{ form.matricula_cel.label }}</label>
+                                {{ form.matricula_cel }}
+                                {% if form.matricula_cel.errors %}
+                                    <div class="text-danger small">{{ form.matricula_cel.errors }}</div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="submit" name="acao" value="calcular" class="btn btn-primary">
+                                <i class="bi bi-calculator me-1"></i>
+                                {% if tem_calculo_anterior %}Recalcular Módulo{% else %}Calcular Módulo{% endif %}
+                            </button>
+                            {% if modo_resultado %}
+                                <button type="submit" name="acao" value="salvar" class="btn btn-success">
+                                    <i class="bi bi-save me-1"></i>Salvar Cálculo
+                                </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
