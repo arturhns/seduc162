@@ -82,10 +82,10 @@
                             {% endif %}
                         </td>
                         <td class="text-end">
-                            <button type="button" class="btn btn-sm btn-outline-primary" disabled
-                                    title="Em breve">
+                            <a href="{% url 'calculo_modulo:form' calculo.escola.pk %}"
+                                class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-calculator me-1"></i>Cálculo
-                            </button>
+                            </a>
                         </td>
                     </tr>
                 {% empty %}
