@@ -65,8 +65,12 @@
                     </div>
                 {% endif %}
 
-                {% if modo_resultado %}
-                    <h2 class="h5 mt-4 mb-2">Cargos calculados</h2>
+                {% if modo_resultado or ultimo_calculo %}
+                    <h2 class="h5 mt-4 mb-2">Cargos calculados
+                        {%if ultimo_calculo and not modo_resultado %}
+                            <span class="badge rounded-pill text-bg-secondary">em {{ ultimo_calculo.data_calculo|date:"d/m/Y H:i" }} (período {%if ultimo_calculo.periodo_id == periodo_ativo.id %}atual{% else %}anterior{% endif %})</span>
+                        {% endif %}
+                    </h2>
                     <div class="table-responsive mb-4">
                         <table class="table table-sm table-bordered align-middle">
                             <thead class="table-light">
@@ -114,92 +118,93 @@
                         </table>
                     </div>
 
-                    {% if diferencas_cargos %}
+                    {% if modo_resultado and ultimo_calculo %}
                         <h2 class="h5 mb-2">Diferenças em relação ao cálculo anterior</h2>
-                        <div class="table-responsive mb-4">
-                            <table class="table table-sm table-bordered align-middle">
-                                <thead class="table-light">
-                                <tr>
-                                    <th>Cargo</th>
-                                    <th class="text-end">Anterior</th>
-                                    <th class="text-end">Novo</th>
-                                    <th class="text-end">Variação</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {% for d in diferencas_cargos %}
+                        {% if diferencas_cargos %}
+                            <div class="table-responsive mb-4">
+                                <table class="table table-sm table-bordered align-middle">
+                                    <thead class="table-light">
                                     <tr>
-                                        <td>{{ d.cargo.nome }}{% if d.cargo.abreviacao %} ({{ d.cargo.abreviacao }}){% endif %}</td>
-                                        <td class="text-end">{{ d.anterior }}</td>
-                                        <td class="text-end">{{ d.novo }}</td>
-                                        <td class="text-end">
-                                            {% if d.delta > 0 %}
-                                                <span class="text-success">+{{ d.delta }}</span>
-                                            {% elif d.delta < 0 %}
-                                                <span class="text-danger">{{ d.delta }}</span>
-                                            {% else %}
-                                                0
-                                            {% endif %}
-                                        </td>
+                                        <th>Cargo</th>
+                                        <th class="text-end">Anterior</th>
+                                        <th class="text-end">Novo</th>
+                                        <th class="text-end">Variação</th>
                                     </tr>
-                                {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody>
+                                    {% for d in diferencas_cargos %}
+                                        <tr>
+                                            <td>{{ d.cargo.nome }}{% if d.cargo.abreviacao %} ({{ d.cargo.abreviacao }}){% endif %}</td>
+                                            <td class="text-end">{{ d.anterior }}</td>
+                                            <td class="text-end">{{ d.novo }}</td>
+                                            <td class="text-end">
+                                                {% if d.delta > 0 %}
+                                                    <span class="text-success">+{{ d.delta }}</span>
+                                                {% elif d.delta < 0 %}
+                                                    <span class="text-danger">{{ d.delta }}</span>
+                                                {% else %}
+                                                    0
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-info">Não há diferenças em relação ao cálculo anterior.</div>
+                        {% endif %}
                     {% endif %}
                 {% endif %}
 
-                {% if periodo_ativo %}
-                    <h2 class="h5 {% if modo_resultado %}mt-4{% endif %} mb-3">
-                        {% if modo_resultado %}Dados da simulação{% else %}Dados de entrada{% endif %}
-                    </h2>
-                    <form method="post" novalidate>
-                        {% csrf_token %}
-                        {% if form.non_field_errors %}
-                            <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-                        {% endif %}
+                <h2 class="h5 {% if modo_resultado or ultimo_calculo %}mt-4{% endif %} mb-3">
+                    {% if modo_resultado %}Dados da simulação{% else %}Dados de entrada{% endif %}
+                </h2>
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">{{ form.non_field_errors }}</div>
+                    {% endif %}
 
+                    <div class="mb-3">
+                        <label class="form-label" for="{{ form.matricula_ativa.id_for_label }}">{{ form.matricula_ativa.label }}</label>
+                        {{ form.matricula_ativa }}
+                        {% if form.matricula_ativa.errors %}
+                            <div class="text-danger small">{{ form.matricula_ativa.errors }}</div>
+                        {% endif %}
+                    </div>
+
+                    {% if mostra_casa %}
                         <div class="mb-3">
-                            <label class="form-label" for="{{ form.matricula_ativa.id_for_label }}">{{ form.matricula_ativa.label }}</label>
-                            {{ form.matricula_ativa }}
-                            {% if form.matricula_ativa.errors %}
-                                <div class="text-danger small">{{ form.matricula_ativa.errors }}</div>
+                            <label class="form-label" for="{{ form.professores_dedicados.id_for_label }}">{{ form.professores_dedicados.label }}</label>
+                            {{ form.professores_dedicados }}
+                            {% if form.professores_dedicados.errors %}
+                                <div class="text-danger small">{{ form.professores_dedicados.errors }}</div>
                             {% endif %}
                         </div>
+                    {% endif %}
 
-                        {% if mostra_casa %}
-                            <div class="mb-3">
-                                <label class="form-label" for="{{ form.professores_dedicados.id_for_label }}">{{ form.professores_dedicados.label }}</label>
-                                {{ form.professores_dedicados }}
-                                {% if form.professores_dedicados.errors %}
-                                    <div class="text-danger small">{{ form.professores_dedicados.errors }}</div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
+                    {% if mostra_cel %}
+                        <div class="mb-3">
+                            <label class="form-label" for="{{ form.matricula_cel.id_for_label }}">{{ form.matricula_cel.label }}</label>
+                            {{ form.matricula_cel }}
+                            {% if form.matricula_cel.errors %}
+                                <div class="text-danger small">{{ form.matricula_cel.errors }}</div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
 
-                        {% if mostra_cel %}
-                            <div class="mb-3">
-                                <label class="form-label" for="{{ form.matricula_cel.id_for_label }}">{{ form.matricula_cel.label }}</label>
-                                {{ form.matricula_cel }}
-                                {% if form.matricula_cel.errors %}
-                                    <div class="text-danger small">{{ form.matricula_cel.errors }}</div>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="submit" name="acao" value="calcular" class="btn btn-primary">
-                                <i class="bi bi-calculator me-1"></i>
-                                {% if tem_calculo_anterior %}Recalcular Módulo{% else %}Calcular Módulo{% endif %}
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="submit" name="acao" value="calcular" class="btn btn-primary">
+                            <i class="bi bi-calculator me-1"></i>{{ botao_principal_label }}
+                        </button>
+                        {% if modo_resultado and periodo_ativo %}
+                            <button type="submit" name="acao" value="salvar" class="btn btn-success">
+                                <i class="bi bi-save me-1"></i>Salvar Cálculo
                             </button>
-                            {% if modo_resultado %}
-                                <button type="submit" name="acao" value="salvar" class="btn btn-success">
-                                    <i class="bi bi-save me-1"></i>Salvar Cálculo
-                                </button>
-                            {% endif %}
-                        </div>
-                    </form>
-                {% endif %}
+                        {% endif %}
+                    </div>
+                </form>
             </div>
         </div>
     </div>

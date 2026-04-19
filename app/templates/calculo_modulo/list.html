@@ -33,11 +33,19 @@
                 <input type="search" class="form-control" id="q" name="q" value="{{ busca }}"
                        placeholder="Nome da escola ou INEP">
             </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label for="status" class="form-label small text-muted mb-1">Status de processamento</label>
+                <select class="form-select" id="status" name="status" aria-label="Status de processamento">
+                    <option value="" {% if not status_processamento %}selected{% endif %}>Todos</option>
+                    <option value="processado" {% if status_processamento == "processado" %}selected{% endif %}>Processado</option>
+                    <option value="pendente" {% if status_processamento == "pendente" %}selected{% endif %}>Pendente</option>
+                </select>
+            </div>
             <div class="col-auto d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search me-1"></i>Filtrar
                 </button>
-                {% if busca %}
+                {% if busca or status_processamento %}
                     <a href="{% url 'calculo_modulo:list' %}" class="btn btn-outline-secondary">Limpar</a>
                 {% endif %}
             </div>
@@ -91,7 +99,11 @@
                 {% empty %}
                     <tr>
                         <td colspan="6" class="text-center text-muted py-4">
-                            Nenhuma escola encontrada para o filtro informado.
+                            {% if not periodo_ativo %}
+                                Não há escolas listadas enquanto não existir período de processamento ativo.
+                            {% else %}
+                                Nenhuma escola encontrada para o filtro informado.
+                            {% endif %}
                         </td>
                     </tr>
                 {% endfor %}
@@ -104,7 +116,7 @@
                 <ul class="pagination mb-0">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca }}">Anterior</a>
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}{% if status_processamento %}&status={{ status_processamento|urlencode }}{% endif %}">Anterior</a>
                         </li>
                     {% endif %}
                     <li class="page-item active">
@@ -112,7 +124,7 @@
                     </li>
                     {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca }}">Próxima</a>
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}{% if status_processamento %}&status={{ status_processamento|urlencode }}{% endif %}">Próxima</a>
                         </li>
                     {% endif %}
                 </ul>
