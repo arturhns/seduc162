@@ -152,7 +152,7 @@ class CalculoModuloView(View):
             pk=kwargs["escola_pk"],
         )
         self.tipos_modalidade = _tipos_modalidade_escola(self.escola)
-        self.mostra_casa = Modalidade.TIPO_CASA in self.tipos_modalidade
+        self.mostra_casa = Modalidade.TIPO_CASA in self.tipos_modalidade or Modalidade.TIPO_SISTEMA_PRISIONAL in self.tipos_modalidade
         self.mostra_cel = Modalidade.TIPO_CEL in self.tipos_modalidade
         return super().dispatch(request, *args, **kwargs)
 
