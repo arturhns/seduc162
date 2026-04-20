@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    {% if sem_periodo_cadastrado %}
+        <div class="d-flex align-items-center justify-content-center" style="min-height: 55vh;">
+            <div class="alert alert-warning border-0 shadow text-center px-4 py-4 col-12 col-md-8 col-lg-6" role="alert">
+                <i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-3 text-warning"></i>
+                <p class="mb-0 fs-5">Nenhum período ativo cadastrado. Cadastre um período para visualizar o dashboard.</p>
+            </div>
+        </div>
+    {% else %}
+        <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-md-between gap-2 mb-4">
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="mb-0 text-muted">
+                {% if periodo_eh_ativo %}
+                    Período ativo: {{ periodo_ref.data_inicio|date:"d/m/Y" }} a {{ periodo_ref.data_fim|date:"d/m/Y" }}
+                {% else %}
+                    Último período: {{ periodo_ref.data_inicio|date:"d/m/Y" }} a {{ periodo_ref.data_fim|date:"d/m/Y" }}
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm text-bg-primary">
+                    <div class="card-body">
+                        <div class="small text-white-50">Total de Escolas</div>
+                        <div class="display-6 fw-semibold">{{ total_escolas }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm text-bg-success">
+                    <div class="card-body">
+                        <div class="small text-white-50">Módulos Calculados</div>
+                        <div class="display-6 fw-semibold">{{ modulos_calculados }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm {% if modulos_pendentes > 0 %}text-bg-warning{% else %}text-bg-success{% endif %}">
+                    <div class="card-body">
+                        <div class="small {% if modulos_pendentes > 0 %}text-dark opacity-75{% else %}text-white-50{% endif %}">Módulos Pendentes</div>
+                        <div class="display-6 fw-semibold {% if modulos_pendentes > 0 %}text-dark{% endif %}">{{ modulos_pendentes }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-xl-3">
+                <div class="card h-100 border-0 shadow-sm {% if designacoes_pendentes > 0 %}text-bg-warning{% else %}text-bg-success{% endif %}">
+                    <div class="card-body">
+                        <div class="small {% if designacoes_pendentes > 0 %}text-dark opacity-75{% else %}text-white-50{% endif %}">Designações Pendentes</div>
+                        <div class="display-6 fw-semibold {% if designacoes_pendentes > 0 %}text-dark{% endif %}">{{ designacoes_pendentes }}</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h2 class="h6 mb-0">Cargos designados por tipo (período)</h2>
+            </div>
+            <div class="card-body" style="height: calc(100vh - 360px); position: relative;">
+                <canvas id="chartDesignacoesPorTipo" class="w-100 mx-auto"></canvas>
+            </div>
+        </div>
+
+        {{ chart_labels|json_script:"dashboard-chart-labels" }}
+        {{ chart_values|json_script:"dashboard-chart-values" }}
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+        <script>
+            (function () {
+                const labels = JSON.parse(document.getElementById("dashboard-chart-labels").textContent);
+                const values = JSON.parse(document.getElementById("dashboard-chart-values").textContent);
+                const ctx = document.getElementById("chartDesignacoesPorTipo");
+                if (!ctx) return;
+                new Chart(ctx, {
+                    type: "bar",
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: "Designações ativas",
+                            data: values,
+                            backgroundColor: [
+                                "rgba(11, 61, 145, 0.75)",
+                                "rgba(15, 118, 110, 0.75)",
+                                "rgba(234, 179, 8, 0.85)",
+                                "rgba(59, 130, 246, 0.75)",
+                            ],
+                            borderColor: [
+                                "rgb(11, 61, 145)",
+                                "rgb(15, 118, 110)",
+                                "rgb(202, 138, 4)",
+                                "rgb(37, 99, 235)",
+                            ],
+                            borderWidth: 1,
+                        }],
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: { stepSize: 1 },
+                            },
+                        },
+                        plugins: {
+                            legend: { display: false },
+                        },
+                    },
+                });
+            })();
+        </script>
+    {% endif %}
+</div>
+{% endblock %}

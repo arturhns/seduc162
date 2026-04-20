@@ -81,7 +81,8 @@
 <div class="d-lg-flex content-wrapper">
     <aside class="sidebar p-3">
         <nav class="nav flex-column">
-            <a class="nav-link" href="#">
+            <a class="nav-link {% if request.resolver_match.namespace == 'dashboard' %}active{% endif %}"
+               href="{% url 'dashboard:index' %}">
                 <i class="bi bi-speedometer2 me-2"></i>Dashboard
             </a>
             
