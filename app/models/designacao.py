@@ -6,7 +6,7 @@ class Designacao(models.Model):
     cargo = models.ForeignKey("app.Cargo", on_delete=models.PROTECT)
     agente = models.ForeignKey("app.AgenteEscolar", on_delete=models.PROTECT)
     data_designacao = models.DateField()
-    status_designacao = models.PositiveSmallIntegerField(default=0)
+    status = models.PositiveSmallIntegerField(default=0)
 
     class Meta:
         db_table = "designacoes"

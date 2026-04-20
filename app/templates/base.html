@@ -100,14 +100,9 @@
                 <i class="bi bi-calendar3 me-2"></i>Períodos de Processamento
             </a>
             
-            <a class="nav-link {% if request.resolver_match.namespace == 'calculo_modulo' %}active{% endif %}"
+            <a class="nav-link {% if request.resolver_match.namespace in 'calculo_modulo,designacao' %}active{% endif %}"
                href="{% url 'calculo_modulo:list' %}">
                 <i class="bi bi-calculator-fill me-2"></i>Cálculo do Módulo
-            </a>
-            
-            <a class="nav-link" 
-               href="#">
-                <i class="bi bi-clipboard2-check-fill me-2"></i>Designação de Gestores
             </a>
             
             <a class="nav-link" 

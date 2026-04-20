@@ -42,7 +42,15 @@
                     <tr>
                         <td>{{ agente.nome_completo }}</td>
                         <td>{{ agente.matricula_funcional }}</td>
-                        <td><span class="badge text-bg-info">{{ agente.get_status_display }}</span></td>
+                        <td>
+                            {% if agente.status == 1 %}
+                                <span class="badge text-bg-success">{{ agente.get_status_display }}</span>
+                            {% elif agente.status == 2 %}
+                                <span class="badge text-bg-warning">{{ agente.get_status_display }}</span>
+                            {% else %}
+                                <span class="badge text-bg-secondary">{{ agente.get_status_display }}</span>
+                            {% endif %}
+                        </td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-primary" href="{% url 'agentes_escolares:detail' agente.pk %}">
                                 <i class="bi bi-eye"></i>

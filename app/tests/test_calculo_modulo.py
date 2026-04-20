@@ -8,7 +8,7 @@ from django.core.management import call_command
 from django.test import TestCase
 
 from app.models import Cargo, Escola, EscolaModalidade, Modalidade, PeriodoProcessamento
-from app.services.calculo_modulo_service import CalculoModuloService
+from app.services.calculo_modulo import CalculoModuloService
 
 _FIXTURE_PATH = Path(__file__).resolve().parent / "fixtures" / "calculo_modulo_base.json"
 

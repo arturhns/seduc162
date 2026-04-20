@@ -30,22 +30,31 @@
         <form method="get" class="row g-2 align-items-end mb-3" action="">
             <div class="col-12 col-md-6 col-lg-4">
                 <label for="q" class="form-label small text-muted mb-1">Buscar por nome ou código INEP</label>
-                <input type="search" class="form-control" id="q" name="q" value="{{ busca }}"
+                <input type="search" class="form-control" id="q" name="q" value="{{ busca_escola_ou_inep }}"
                        placeholder="Nome da escola ou INEP">
             </div>
             <div class="col-12 col-sm-6 col-md-4 col-lg-3">
                 <label for="status" class="form-label small text-muted mb-1">Status de processamento</label>
                 <select class="form-select" id="status" name="status" aria-label="Status de processamento">
-                    <option value="" {% if not status_processamento %}selected{% endif %}>Todos</option>
-                    <option value="processado" {% if status_processamento == "processado" %}selected{% endif %}>Processado</option>
-                    <option value="pendente" {% if status_processamento == "pendente" %}selected{% endif %}>Pendente</option>
+                    <option value="" {% if not busca_status_processamento %}selected{% endif %}>Todos</option>
+                    <option value="1" {% if busca_status_processamento == "1" %}selected{% endif %}>Processado</option>
+                    <option value="0" {% if busca_status_processamento == "0" %}selected{% endif %}>Pendente</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+                <label for="status_designacao" class="form-label small text-muted mb-1">Status de designação</label>
+                <select class="form-select" id="status_designacao" name="status_designacao" aria-label="Status de designação">
+                    <option value="" {% if not busca_status_designacao %}selected{% endif %}>Todos</option>
+                    <option value="0" {% if busca_status_designacao == "0" %}selected{% endif %}>Pendente</option>
+                    <option value="1" {% if busca_status_designacao == "1" %}selected{% endif %}>Em andamento</option>
+                    <option value="2" {% if busca_status_designacao == "2" %}selected{% endif %}>Concluído</option>
                 </select>
             </div>
             <div class="col-auto d-flex gap-2">
                 <button type="submit" class="btn btn-primary">
                     <i class="bi bi-search me-1"></i>Filtrar
                 </button>
-                {% if busca or status_processamento %}
+                {% if busca_escola_ou_inep or busca_status_processamento or busca_status_designacao %}
                     <a href="{% url 'calculo_modulo:list' %}" class="btn btn-outline-secondary">Limpar</a>
                 {% endif %}
             </div>
@@ -60,6 +69,7 @@
                     <th>Matrícula Ativa</th>
                     <th>Cargos Calculados</th>
                     <th>Status</th>
+                    <th>Designação</th>
                     <th class="text-end">Ações</th>
                 </tr>
                 </thead>
@@ -89,16 +99,42 @@
                                 <span class="badge text-bg-warning text-dark">Pendente</span>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if calculo.processado %}
+                                {% if calculo.status_designacao.value == 0 %}
+                                    <span class="badge text-bg-warning text-dark">{{ calculo.status_designacao.label }}</span>
+                                {% elif calculo.status_designacao.value == 1 %}
+                                    <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ calculo.status_designacao.label }}</span>
+                                {% elif calculo.status_designacao.value == 2 %}
+                                    <span class="badge text-bg-success">{{ calculo.status_designacao.label }}</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">—</span>
+                            {% endif %}
+                        </td>
                         <td class="text-end">
-                            <a href="{% url 'calculo_modulo:form' calculo.escola.pk %}"
-                                class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-calculator me-1"></i>Cálculo
-                            </a>
+                            <div class="d-inline-flex flex-wrap justify-content-end gap-1">
+                                <a href="{% url 'calculo_modulo:form' calculo.escola.pk %}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-calculator me-1"></i>Cálculo
+                                </a>
+                                {% if calculo.processado %}
+                                    <a href="{% url 'designacao:form' escola_id=calculo.escola.pk %}"
+                                       class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-people me-1"></i>Designar Gestores
+                                    </a>
+                                {% else %}
+                                    <span class="btn btn-sm btn-secondary disabled" tabindex="-1" role="button"
+                                          title="Processe o cálculo do módulo antes de designar gestores.">
+                                        <i class="bi bi-people me-1"></i>Designar Gestores
+                                    </span>
+                                {% endif %}
+                            </div>
                         </td>
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="6" class="text-center text-muted py-4">
+                        <td colspan="7" class="text-center text-muted py-4">
                             {% if not periodo_ativo %}
                                 Não há escolas listadas enquanto não existir período de processamento ativo.
                             {% else %}
@@ -116,7 +152,7 @@
                 <ul class="pagination mb-0">
                     {% if page_obj.has_previous %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca|urlencode }}{% if status_processamento %}&status={{ status_processamento|urlencode }}{% endif %}">Anterior</a>
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ busca_escola_ou_inep|urlencode }}{% if busca_status_processamento %}&status={{ busca_status_processamento|urlencode }}{% endif %}{% if busca_status_designacao %}&status_designacao={{ busca_status_designacao|urlencode }}{% endif %}">Anterior</a>
                         </li>
                     {% endif %}
                     <li class="page-item active">
@@ -124,7 +160,7 @@
                     </li>
                     {% if page_obj.has_next %}
                         <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca|urlencode }}{% if status_processamento %}&status={{ status_processamento|urlencode }}{% endif %}">Próxima</a>
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ busca_escola_ou_inep|urlencode }}{% if busca_status_processamento %}&status={{ busca_status_processamento|urlencode }}{% endif %}{% if busca_status_designacao %}&status_designacao={{ busca_status_designacao|urlencode }}{% endif %}">Próxima</a>
                         </li>
                     {% endif %}
                 </ul>

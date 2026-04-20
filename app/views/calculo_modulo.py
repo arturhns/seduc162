@@ -3,7 +3,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Prefetch, Q, Exists, OuterRef
+from django.db.models import Prefetch, Q, Exists, OuterRef, Subquery
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
 from django.views import View
@@ -18,7 +18,7 @@ from app.models import (
     Modalidade,
     PeriodoProcessamento,
 )
-from app.services.calculo_modulo_service import CalculoModuloService
+from app.services.calculo_modulo import CalculoModuloService
 
 
 def _formato_cargos_calculados(quantidades):
@@ -77,8 +77,8 @@ class CalculoModuloListView(TemplateView):
     paginate_by = 15
 
     _STATUS_PROCESSAMENTO_TODOS = ""
-    _STATUS_PROCESSAMENTO_PROCESSADO = "processado"
-    _STATUS_PROCESSAMENTO_PENDENTE = "pendente"
+    _STATUS_PROCESSAMENTO_PROCESSADO = "1"
+    _STATUS_PROCESSAMENTO_PENDENTE = "0"
     _STATUS_PROCESSAMENTO_CHOICES = frozenset(
         {
             _STATUS_PROCESSAMENTO_TODOS,
@@ -87,28 +87,45 @@ class CalculoModuloListView(TemplateView):
         }
     )
 
+    _STATUS_DESIGNACAO_TODOS = ""
+    _STATUS_DESIGNACAO_PENDENTE = "0"
+    _STATUS_DESIGNACAO_EM_ANDAMENTO = "1"
+    _STATUS_DESIGNACAO_CONCLUIDO = "2"
+    _STATUS_DESIGNACAO_CHOICES = frozenset(
+        {
+            _STATUS_DESIGNACAO_TODOS,
+            _STATUS_DESIGNACAO_PENDENTE,
+            _STATUS_DESIGNACAO_EM_ANDAMENTO,
+            _STATUS_DESIGNACAO_CONCLUIDO,
+        }
+    )
+
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
 
         periodo_ativo = PeriodoProcessamento.get_periodo_ativo()
 
-        busca = (self.request.GET.get("q") or "").strip()
-        status_processamento = (self.request.GET.get("status") or "").strip()
+        busca_escola_ou_inep = (self.request.GET.get("q") or "").strip()
+        busca_status_processamento = (self.request.GET.get("status") or "").strip()
+        busca_status_designacao = (self.request.GET.get("status_designacao") or "").strip()
 
-        if status_processamento not in self._STATUS_PROCESSAMENTO_CHOICES:
-            status_processamento = self._STATUS_PROCESSAMENTO_TODOS
+        if busca_status_processamento not in self._STATUS_PROCESSAMENTO_CHOICES:
+            busca_status_processamento = self._STATUS_PROCESSAMENTO_TODOS
+
+        if busca_status_designacao not in self._STATUS_DESIGNACAO_CHOICES:
+            busca_status_designacao = self._STATUS_DESIGNACAO_TODOS
 
         if periodo_ativo is None:
             escolas_qs = Escola.objects.none()
         else:
             escolas_qs = Escola.objects.order_by("nome")
 
-            if busca:
+            if busca_escola_ou_inep:
                 escolas_qs = escolas_qs.filter(
-                    Q(nome__icontains=busca) | Q(codigo_inep__icontains=busca)
+                    Q(nome__icontains=busca_escola_ou_inep) | Q(codigo_inep__icontains=busca_escola_ou_inep)
                 )
 
-            if status_processamento in (
+            if busca_status_processamento in (
                 self._STATUS_PROCESSAMENTO_PROCESSADO,
                 self._STATUS_PROCESSAMENTO_PENDENTE,
             ):
@@ -117,10 +134,29 @@ class CalculoModuloListView(TemplateView):
                     periodo=periodo_ativo,
                 )
 
-                if status_processamento == self._STATUS_PROCESSAMENTO_PROCESSADO:
+                if busca_status_processamento == self._STATUS_PROCESSAMENTO_PROCESSADO:
                     escolas_qs = escolas_qs.filter(Exists(calculo_existe))
                 else:  
                     escolas_qs = escolas_qs.filter(~Exists(calculo_existe))
+
+            if busca_status_designacao in (
+                self._STATUS_DESIGNACAO_PENDENTE,
+                self._STATUS_DESIGNACAO_EM_ANDAMENTO,
+                self._STATUS_DESIGNACAO_CONCLUIDO,
+            ):
+                ultimo_status_sq = Subquery(
+                    CalculoModulo.objects.filter(
+                        escola_id=OuterRef("pk"),
+                        periodo=periodo_ativo,
+                    )
+                    .order_by("-data_calculo")
+                    .values("status_designacao")[:1]
+                )
+                escolas_qs = escolas_qs.annotate(
+                    _ultimo_status_designacao=ultimo_status_sq,
+                ).filter(
+                    _ultimo_status_designacao=busca_status_designacao,
+                )
 
         paginator = Paginator(escolas_qs, self.paginate_by)
         page_obj = paginator.get_page(self.request.GET.get("page"))
@@ -163,10 +199,15 @@ class CalculoModuloListView(TemplateView):
                 cargos_txt = _formato_cargos_calculados(qts) if qts else "--"
                 matricula = ultimo.matricula_ativa
                 processado = True
+                status_designacao = {
+                    "label": ultimo.get_status_designacao_display(),
+                    "value": ultimo.status_designacao,
+                }
             else:
                 cargos_txt = "--"
                 matricula = None
                 processado = False
+                status_designacao = None
 
             calculos.append(
                 {
@@ -174,14 +215,16 @@ class CalculoModuloListView(TemplateView):
                     "matricula_ativa": matricula,
                     "cargos_calculados": cargos_txt,
                     "processado": processado,
+                    "status_designacao": status_designacao,
                 }
             )
 
         ctx.update(
             {
                 "periodo_ativo": periodo_ativo,
-                "busca": busca,
-                "status_processamento": status_processamento,
+                "busca_escola_ou_inep": busca_escola_ou_inep,
+                "busca_status_processamento": busca_status_processamento,
+                "busca_status_designacao": busca_status_designacao,
                 "paginator": paginator,
                 "page_obj": page_obj,
                 "is_paginated": page_obj.has_other_pages(),
@@ -380,7 +423,7 @@ class CalculoModuloView(View):
                 ]
             )
         messages.success(self.request, "Cálculo salvo com sucesso.")
-        return redirect("calculo_modulo:form", escola_pk=self.escola.pk)
+        return redirect("designacao:form", escola_id=self.escola.pk)
 
     def _base_context(
         self,
@@ -408,6 +451,13 @@ class CalculoModuloView(View):
             if getattr(self.escola, "pei_nove_horas", False):
                 rotulos_pei_extra.append("PEI 9h")
 
+        tem_calculo_salvo_periodo_ativo = False
+        if periodo_ativo is not None:
+            tem_calculo_salvo_periodo_ativo = (
+                CalculoModulo.get_ultimo_calculo(self.escola, periodo_ativo)
+                is not None
+            )
+
         return {
             "escola": self.escola,
             "periodo_ativo": periodo_ativo,
@@ -422,4 +472,5 @@ class CalculoModuloView(View):
             "diferencas_cargos": diferencas_cargos or [],
             "modalidades_escola_nomes": nomes_modalidade,
             "rotulos_pei_extra_topo": rotulos_pei_extra,
+            "tem_calculo_salvo_periodo_ativo": tem_calculo_salvo_periodo_ativo,
         }

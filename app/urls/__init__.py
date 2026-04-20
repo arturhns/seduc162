@@ -14,4 +14,5 @@ urlpatterns = [
         "calculo-modulo/",
         include("app.urls.calculo_modulo", namespace="calculo_modulo"),
     ),
+    path("designacao/", include("app.urls.designacao", namespace="designacao")),
 ]

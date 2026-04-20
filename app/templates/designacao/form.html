@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+
+{% block title %}Designação de Gestores | Gestão SP - Designação{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div>
+                <h1 class="h4 mb-1">Designação de Gestores</h1>
+                <div class="text-muted small">
+                    <div><strong>Escola:</strong> {{ escola.nome }}</div>
+                    <div><strong>Código INEP:</strong> {{ escola.codigo_inep }}</div>
+                    {% if modalidades_escola_nomes %}
+                        <div><strong>Modalidades:</strong> {{ modalidades_escola_nomes|join:", " }}</div>
+                    {% endif %}
+                    {% if ultimo_calculo %}
+                        <div><strong>Data do cálculo:</strong> {{ ultimo_calculo.data_calculo|date:"d/m/Y H:i" }}</div>
+                    {% endif %}
+                    {% if periodo_ativo %}
+                        <div><strong>Período ativo:</strong> {{ periodo_ativo.data_inicio|date:"d/m/Y" }} a {{ periodo_ativo.data_fim|date:"d/m/Y" }}</div>
+                    {% endif %}
+                    <div><strong>Matricula ativa:</strong> {{ ultimo_calculo.matricula_ativa }}</div> 
+                    {% if ultimo_calculo.professores_dedicados %}
+                        <div><strong>Professores dedicados:</strong> {{ ultimo_calculo.professores_dedicados }}</div>
+                    {% endif %}
+                    {% if ultimo_calculo.matricula_cel %}
+                        <div><strong>Matricula CEL:</strong> {{ ultimo_calculo.matricula_cel }}</div>
+                    {% endif %}
+                    {% if ultimo_calculo.status_designacao == 2 %}
+                        <div><strong>Status da designação:</strong> <span class="badge text-bg-success">{{ ultimo_calculo.get_status_designacao_display }}</span></div>
+                    {% elif ultimo_calculo.status_designacao == 1 %}
+                        <div><strong>Status da designação:</strong> <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ ultimo_calculo.get_status_designacao_display }}</span></div>
+                    {% else %}
+                        <div><strong>Status da designação:</strong> <span class="badge text-bg-warning text-dark">{{ ultimo_calculo.get_status_designacao_display }}</span></div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <a href="{% url 'calculo_modulo:form' escola.pk %}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Ir para Cálculo do Módulo
+            </a>
+        </div>
+    
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert {% if message.tags == 'error' %}alert-danger{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} mb-3" role="alert">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+
+        {% if sem_calculo %}
+            <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                <div>
+                    {% if not periodo_ativo %}
+                        Não existe período de processamento ativo. Ative um período para prosseguir com a designação.
+                    {% else %}
+                        Esta escola ainda não possui cálculo de módulo salvo no período ativo. Processe o cálculo antes de designar gestores.
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <form method="post" class="mt-2" id="form-designacao" autocomplete="off">
+                {% csrf_token %}
+
+                <div class="table-responsive mb-3">
+                    <p class="form-text mb-2">
+                        Use a busca para localizar agentes ativos. Agentes com designação ativa em qualquer escola do período,
+                        ou já designados neste cálculo, não aparecem nas sugestões.
+                    </p>
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Cargo</th>
+                            <th class="text-center">Necessários</th>
+                            <th>Designados (cálculo atual)</th>
+                            <th>Designados (cálculos anteriores — ativos)</th>
+                            <th>Nova designação</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for linha in linhas %}
+                            {% with q=linha.quantidade %}
+                            <tr>
+                                <td>
+                                    <div class="fw-semibold">{{ q.cargo.nome }}</div>
+                                    {% if q.cargo.abreviacao %}
+                                        <div class="small text-muted">{{ q.cargo.abreviacao }}</div>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">{{ q.quantidade }}</td>
+                                <td>
+                                    {% if linha.designacoes_ultimo %}
+                                        <ul class="list-unstyled mb-0 small">
+                                            {% for d in linha.designacoes_ultimo %}
+                                                <li class="d-flex flex-wrap align-items-center gap-2 py-1 border-bottom border-light-subtle">
+                                                    <span class="badge text-bg-secondary">{{ d.data_designacao|date:"d/m/Y" }}</span>
+                                                    {% if d.status == 1 %}
+                                                        <span class="badge text-bg-success">Ativo</span>
+                                                    {% else %}
+                                                        <span class="badge text-bg-secondary">Cessado</span>
+                                                    {% endif %}
+                                                    <span>{{ d.agente.nome_completo }}</span>
+                                                    <span class="text-muted">({{ d.agente.matricula_funcional }})</span>
+                                                    {% if d.status == 1 %}
+                                                    <button type="submit" name="cessar" value="{{ d.pk }}"
+                                                            class="btn btn-sm btn-outline-danger ms-auto">
+                                                        Cessar
+                                                    </button>
+                                                    {% endif %}
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-muted small">Nenhuma designação neste cálculo.</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if linha.designacoes_anteriores %}
+                                        <ul class="list-unstyled mb-0 small">
+                                            {% for d in linha.designacoes_anteriores %}
+                                                <li class="d-flex flex-wrap align-items-center gap-2 py-1 border-bottom border-light-subtle">
+                                                    <span class="badge text-bg-secondary">{{ d.calculo_modulo.data_calculo|date:"d/m/Y" }}</span>
+                                                    <span>{{ d.agente.nome_completo }}</span>
+                                                    <span class="text-muted">({{ d.agente.matricula_funcional }})</span>
+                                                </li>
+                                            {% endfor %}
+                                        </ul>
+                                    {% else %}
+                                        <span class="text-muted small">—</span>
+                                    {% endif %}
+                                </td>
+                                <td style="min-width: 260px;">
+                                    {% if linha.pode_designar %}
+                                        <div class="designacao-multi vstack gap-2"
+                                             data-field-name="novo_agente_{{ q.cargo_id }}"
+                                             data-vagas="{{ linha.vagas_restantes }}"
+                                             data-busca-url="{% url 'designacao:buscar_agentes' escola.pk %}">
+                                            <div class="designacao-rows vstack gap-2"></div>
+                                            <button type="button" class="btn ms-auto btn-sm btn-outline-primary designacao-add-row">
+                                                <i class="bi bi-plus-lg me-1"></i>Adicionar
+                                            </button>
+                                        </div>
+                                    {% else %}
+                                        <span class="text-muted small">Sem vagas neste cálculo (quantidade 0).</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endwith %}
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card border mb-4">
+                    <div class="card-header py-2">
+                        <span class="fw-semibold small text-uppercase text-muted">Contratação de terceiros</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.situacao_aoe.id_for_label }}">{{ form.situacao_aoe.label }}</label>
+                                {{ form.situacao_aoe }}
+                                {% if form.situacao_aoe.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.situacao_aoe.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label class="form-label" for="{{ form.situacao_ase.id_for_label }}">{{ form.situacao_ase.label }}</label>
+                                {{ form.situacao_ase }}
+                                {% if form.situacao_ase.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.situacao_ase.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="submit" name="acao" value="salvar" class="btn btn-primary">
+                        <i class="bi bi-save me-1"></i>Salvar Designação
+                    </button>
+                </div>
+            </form>
+
+            <script>
+            (function () {
+                const form = document.getElementById("form-designacao");
+                if (!form) return;
+
+                function coletarExcluir(excetoHidden) {
+                    const ids = [];
+                    form.querySelectorAll('input[type="hidden"][name^="novo_agente_"]').forEach(function (h) {
+                        if (h === excetoHidden) return;
+                        const v = (h.value || "").trim();
+                        if (v) ids.push(v);
+                    });
+                    return ids.join(",");
+                }
+
+                document.addEventListener("click", function (ev) {
+                    form.querySelectorAll(".designacao-multi .position-relative").forEach(function (row) {
+                        const listEl = row.querySelector(".designacao-sugestoes");
+                        if (!listEl || listEl.classList.contains("d-none")) return;
+                        if (!row.contains(ev.target)) {
+                            listEl.innerHTML = "";
+                            listEl.classList.add("d-none");
+                        }
+                    });
+                });
+
+                function ligarLinha(row, buscaUrl) {
+                    const input = row.querySelector(".designacao-busca-input");
+                    const hidden = row.querySelector('input[type="hidden"]');
+                    const listEl = row.querySelector(".designacao-sugestoes");
+                    let timer = null;
+
+                    function fecharLista() {
+                        listEl.innerHTML = "";
+                        listEl.classList.add("d-none");
+                    }
+
+                    input.addEventListener("input", function () {
+                        hidden.value = "";
+                        const q = input.value.trim();
+                        if (timer) clearTimeout(timer);
+                        if (q.length < 2) {
+                            fecharLista();
+                            return;
+                        }
+                        timer = setTimeout(function () {
+                            const excluir = coletarExcluir(hidden);
+                            const url = buscaUrl + "?q=" + encodeURIComponent(q) + "&excluir=" + encodeURIComponent(excluir);
+                            fetch(url, { headers: { "Accept": "application/json" } })
+                                .then(function (r) { return r.json(); })
+                                .then(function (data) {
+                                    const items = data.results || [];
+                                    listEl.innerHTML = "";
+                                    if (!items.length) {
+                                        const empty = document.createElement("span");
+                                        empty.className = "list-group-item small text-muted";
+                                        empty.textContent = "Nenhum resultado";
+                                        listEl.appendChild(empty);
+                                        listEl.classList.remove("d-none");
+                                        return;
+                                    }
+                                    items.forEach(function (it) {
+                                        const btn = document.createElement("button");
+                                        btn.type = "button";
+                                        btn.className = "list-group-item list-group-item-action small text-start";
+                                        btn.textContent = it.label;
+                                        btn.addEventListener("click", function (ev) {
+                                            ev.preventDefault();
+                                            ev.stopPropagation();
+                                            hidden.value = String(it.id);
+                                            input.value = it.label;
+                                            fecharLista();
+                                        });
+                                        listEl.appendChild(btn);
+                                    });
+                                    listEl.classList.remove("d-none");
+                                })
+                                .catch(function () { fecharLista(); });
+                        }, 300);
+                    });
+                }
+
+                function criarLinha(fieldName, buscaUrl) {
+                    const row = document.createElement("div");
+                    row.className = "position-relative";
+                    row.innerHTML =
+                        '<div class="input-group input-group-sm">' +
+                        '<input type="text" class="form-control designacao-busca-input" placeholder="Buscar por nome ou matrícula…" autocomplete="off">' +
+                        '<button type="button" class="btn btn-outline-secondary designacao-remove-row" title="Remover"><i class="bi bi-x-lg"></i></button></div>' +
+                        '<input type="hidden" name="' + fieldName + '" value="">' +
+                        '<div class="designacao-sugestoes list-group position-absolute w-100 shadow-sm mt-1 d-none" style="z-index: 1050; max-height: 220px; overflow-y: auto;"></div>';
+                    ligarLinha(row, buscaUrl);
+                    row.querySelector(".designacao-remove-row").addEventListener("click", function () {
+                        row.remove();
+                        atualizarBotoesAdicionar();
+                    });
+                    return row;
+                }
+
+                function atualizarBotoesAdicionar() {
+                    document.querySelectorAll(".designacao-multi").forEach(function (box) {
+                        const maxVagas = parseInt(box.getAttribute("data-vagas"), 10) || 0;
+                        const rows = box.querySelectorAll(".designacao-rows .position-relative");
+                        const addBtn = box.querySelector(".designacao-add-row");
+                        if (!addBtn) return;
+                        const cheio = rows.length >= maxVagas;
+
+                        if (cheio || maxVagas === 0) {
+                            addBtn.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> Limite atingido';
+                            addBtn.classList.replace("btn-outline-primary", "btn-outline-secondary");
+                            addBtn.disabled = true;
+                        } else {
+                            addBtn.innerHTML = '<i class="bi bi-plus-lg me-1"></i> Adicionar';
+                            addBtn.classList.replace("btn-outline-secondary", "btn-outline-primary");
+                            addBtn.disabled = false;
+                        }
+                    });
+                }
+
+                document.querySelectorAll(".designacao-multi").forEach(function (box) {
+                    const fieldName = box.getAttribute("data-field-name");
+                    const buscaUrl = box.getAttribute("data-busca-url");
+                    const holder = box.querySelector(".designacao-rows");
+                    const addBtn = box.querySelector(".designacao-add-row");
+                    if (!holder || !addBtn || !fieldName || !buscaUrl) return;
+
+                    addBtn.addEventListener("click", function () {
+                        const maxVagas = parseInt(box.getAttribute("data-vagas"), 10) || 0;
+                        const rows = holder.querySelectorAll(".position-relative");
+                        if (rows.length >= maxVagas) return;
+                        holder.appendChild(criarLinha(fieldName, buscaUrl));
+                        atualizarBotoesAdicionar();
+                    });
+
+                    atualizarBotoesAdicionar();
+                });
+            })();
+            </script>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

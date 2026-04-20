@@ -8,6 +8,15 @@ class CalculoModulo(models.Model):
     professores_dedicados = models.PositiveSmallIntegerField(null=True, blank=True, default=None)
     matricula_cel = models.PositiveIntegerField(null=True, blank=True, default=None)
     data_calculo = models.DateTimeField(auto_now_add=True)
+    status_designacao = models.PositiveSmallIntegerField(
+        choices=[
+            (0, "Pendente"),
+            (1, "Em andamento"),
+            (2, "Concluído"),
+        ],
+        default=0,
+        verbose_name="Status da Designação",
+    )
 
     class Meta:
         db_table = "calculos_modulo"

@@ -64,8 +64,8 @@ class AgenteEscolarAdmin(admin.ModelAdmin):
 
 @admin.register(Designacao)
 class DesignacaoAdmin(admin.ModelAdmin):
-    list_display = ("calculo_modulo", "cargo", "agente", "data_designacao", "status_designacao")
-    list_filter = ("status_designacao",)
+    list_display = ("calculo_modulo", "cargo", "agente", "data_designacao", "status")
+    list_filter = ("status",)
     list_select_related = ("calculo_modulo", "cargo", "agente")
 
 
