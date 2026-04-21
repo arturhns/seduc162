@@ -406,7 +406,7 @@ class DesignacaoView(View):
                 calculo_modulo=ultimo, cargo__tipo=Cargo.TIPO_GESTAO
             )
             .select_related("cargo")
-            .order_by("cargo__nome")
+            .order_by("cargo_id")
         )
 
         des_ultimo_dedup = _designacoes_ultimo_por_ultimo_status(ultimo)
