@@ -39,7 +39,8 @@ Siga esta ordem para garantir que o processo funcione corretamente:
    - Data de início
    - Data de fim
 4. Salve.
-5. **Importante:** Apenas um período pode estar ativo por vez. O sistema ativa automaticamente o que a data atual (horário do servidor) está dentro do intervalo.
+
+> **Importante:** Apenas um período pode estar ativo por vez. O sistema ativa automaticamente o que a data atual (horário do servidor) está dentro do intervalo.
 
 #### 4. Cálculo do Módulo
 1. Acesse **Cálculo do Módulo** (página principal do fluxo).
