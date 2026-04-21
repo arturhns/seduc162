@@ -134,13 +134,11 @@ class RelatorioDesignacaoExportCsvView(View):
             ]
         )
         for d in _designacoes_queryset(periodo).iterator():
-            ultimo_id = getattr(d, "_ultimo_calculo_periodo_id", None)
-            ativo_calc = ultimo_id is not None and int(d.calculo_modulo_id) == int(ultimo_id)
             w.writerow(
                 [
                     d.calculo_modulo.escola.nome,
                     d.calculo_modulo.data_calculo.strftime("%d/%m/%Y %H:%M"),
-                    "Sim" if ativo_calc else "Não",
+                    "Sim" if d.calculo_modulo.ultimo_calculo else "Não",
                     d.agente.nome_completo,
                     d.agente.matricula_funcional,
                     d.cargo.nome,
@@ -175,7 +173,7 @@ class RelatorioDesignacaoExportPdfView(View):
             from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
         except ImportError:
             return HttpResponse(
-                "Biblioteca reportlab nao instalada.",
+                "Biblioteca reportlab não instalada.",
                 status=500,
                 content_type="text/plain; charset=utf-8",
             )
@@ -188,14 +186,14 @@ class RelatorioDesignacaoExportPdfView(View):
             rightMargin=12 * mm,
             topMargin=12 * mm,
             bottomMargin=12 * mm,
-            title=_ascii_pdf_safe(f"Relatorio Designacao {periodo.pk}"),
+            title=_ascii_pdf_safe(f"Relatório de Designações {periodo.pk}"),
         )
         styles = getSampleStyleSheet()
         story = []
         story.append(
             Paragraph(
                 _ascii_pdf_safe(
-                    f"Relatorio de Designacao - Periodo {periodo.data_inicio} a {periodo.data_fim}"
+                    f"Relatório de Designações - Período {periodo.data_inicio} a {periodo.data_fim}"
                 ),
                 styles["Title"],
             )
@@ -204,23 +202,21 @@ class RelatorioDesignacaoExportPdfView(View):
 
         header = [
             "Escola",
-            "Calculo (data)",
-            "Ativo periodo",
+            "Cálculo (data)",
+            "Ativo no período?",
             "Agente",
-            "Matricula",
+            "Matrícula Funcional",
             "Cargo",
             "Status",
-            "Data des.",
+            "Data de Designação",
         ]
         data = [header]
         for d in _designacoes_queryset(periodo).iterator():
-            ultimo_id = getattr(d, "_ultimo_calculo_periodo_id", None)
-            ativo_calc = ultimo_id is not None and int(d.calculo_modulo_id) == int(ultimo_id)
             data.append(
                 [
                     _ascii_pdf_safe(d.calculo_modulo.escola.nome),
                     _ascii_pdf_safe(d.calculo_modulo.data_calculo.strftime("%d/%m/%Y %H:%M")),
-                    "Sim" if ativo_calc else "Nao",
+                    "Sim" if d.calculo_modulo.ultimo_calculo else "Não",
                     _ascii_pdf_safe(d.agente.nome_completo),
                     _ascii_pdf_safe(d.agente.matricula_funcional),
                     _ascii_pdf_safe(d.cargo.nome),

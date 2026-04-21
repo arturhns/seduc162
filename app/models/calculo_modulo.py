@@ -27,8 +27,8 @@ class CalculoModulo(models.Model):
         return f"Cálculo {self.escola} ({self.periodo})"
 
     @classmethod
-    def get_ultimo_calculo(cls, escola, periodo):
-        """Retorna o cálculo vigente da escola no período (`ultimo_calculo=True`)."""
+    def get_ultimo_calculo_periodo(cls, escola, periodo):
+        """Retorna o cálculo vigente da escola no período (campo `ultimo_calculo=True`)."""
         if periodo is None:
             return None
         return (

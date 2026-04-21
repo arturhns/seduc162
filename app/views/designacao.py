@@ -122,7 +122,7 @@ class DesignacaoAgenteSearchView(View):
         escola = get_object_or_404(Escola, pk=kwargs["escola_id"])
         periodo_ativo = PeriodoProcessamento.get_periodo_ativo()
         ultimo = (
-            CalculoModulo.get_ultimo_calculo(escola, periodo_ativo)
+            CalculoModulo.get_ultimo_calculo_periodo(escola, periodo_ativo)
             if periodo_ativo
             else None
         )
@@ -188,7 +188,7 @@ class DesignacaoView(View):
         self.periodo_ativo = PeriodoProcessamento.get_periodo_ativo()
         self.ultimo_calculo = None
         if self.periodo_ativo:
-            self.ultimo_calculo = CalculoModulo.get_ultimo_calculo(
+            self.ultimo_calculo = CalculoModulo.get_ultimo_calculo_periodo(
                 self.escola, self.periodo_ativo
             )
         return super().dispatch(request, *args, **kwargs)
@@ -198,7 +198,7 @@ class DesignacaoView(View):
             return False
         if int(calculo.periodo_id) != int(self.periodo_ativo.pk):
             return False
-        ref = CalculoModulo.get_ultimo_calculo(self.escola, self.periodo_ativo)
+        ref = CalculoModulo.get_ultimo_calculo_periodo(self.escola, self.periodo_ativo)
         return ref is not None and int(ref.pk) == int(calculo.pk)
 
     def get(self, request, *args, **kwargs):

@@ -41,7 +41,7 @@ def _ultimo_calculo_para_exibicao(escola, periodo_ativo):
     vigentes (`ultimo_calculo`), o de `data_calculo` mais recente.
     """
     if periodo_ativo:
-        calc_ativo = CalculoModulo.get_ultimo_calculo(escola, periodo_ativo)
+        calc_ativo = CalculoModulo.get_ultimo_calculo_periodo(escola, periodo_ativo)
         if calc_ativo:
             return calc_ativo
 
@@ -53,7 +53,7 @@ def _ultimo_calculo_para_exibicao(escola, periodo_ativo):
 
 
 def _botao_principal_label(escola, periodo_ativo) -> str:
-    if periodo_ativo and CalculoModulo.get_ultimo_calculo(escola, periodo_ativo):
+    if periodo_ativo and CalculoModulo.get_ultimo_calculo_periodo(escola, periodo_ativo):
         return "Recalcular Módulo"
     return "Calcular Módulo"
 
@@ -327,7 +327,7 @@ class CalculoModuloView(View):
             )
             return TemplateResponse(self.request, self.template_name, ctx)
 
-        ultimo = CalculoModulo.get_ultimo_calculo(self.escola, periodo_ativo)
+        ultimo = CalculoModulo.get_ultimo_calculo_periodo(self.escola, periodo_ativo)
         form = CalculoModuloInputForm(
             request.POST,
             mostra_casa=self.mostra_casa,
@@ -459,7 +459,7 @@ class CalculoModuloView(View):
         tem_calculo_salvo_periodo_ativo = False
         if periodo_ativo is not None:
             tem_calculo_salvo_periodo_ativo = (
-                CalculoModulo.get_ultimo_calculo(self.escola, periodo_ativo)
+                CalculoModulo.get_ultimo_calculo_periodo(self.escola, periodo_ativo)
                 is not None
             )
 
