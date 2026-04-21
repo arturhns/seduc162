@@ -38,7 +38,6 @@
                         <div id="periodo_sugestoes"
                              class="list-group position-absolute w-100 shadow-sm mt-1 d-none"
                              style="z-index: 1050; max-height: 240px; overflow-y: auto;"></div>
-                        <div class="form-text">Somente períodos já iniciados. Busca com lazy loading (mínimo 2 caracteres).</div>
                     </div>
                     <div class="col-auto d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
@@ -69,7 +68,7 @@
                             <td>{{ d.calculo_modulo.escola.nome }}</td>
                             <td>{{ d.calculo_modulo.data_calculo|date:"d/m/Y H:i" }}</td>
                             <td>
-                                {% if d.calculo_modulo_id == d._ultimo_calculo_periodo_id %}
+                                {% if d.calculo_modulo.ultimo_calculo %}
                                     <span class="badge text-bg-success">Sim</span>
                                 {% else %}
                                     <span class="badge text-bg-secondary">Não</span>

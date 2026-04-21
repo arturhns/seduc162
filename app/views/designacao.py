@@ -28,19 +28,14 @@ from app.services.designacao_status import calculo_status_designacao
 
 
 def _ids_ultimos_calculos_periodo_ativo(periodo_ativo: PeriodoProcessamento | None) -> list[int]:
-    """Um id de CalculoModulo por escola: o mais recente no período ativo."""
+    """Um id de CalculoModulo por escola: o cálculo vigente (`ultimo_calculo`) no período ativo."""
     if periodo_ativo is None:
         return []
-    ultimo_por_escola: dict[int, int] = {}
-    for calc in (
-        CalculoModulo.objects.filter(periodo=periodo_ativo)
-        .order_by("escola_id", "-data_calculo", "-pk")
-        .iterator()
-    ):
-        eid = int(calc.escola_id)
-        if eid not in ultimo_por_escola:
-            ultimo_por_escola[eid] = int(calc.pk)
-    return list(ultimo_por_escola.values())
+    return list(
+        CalculoModulo.objects.filter(
+            periodo=periodo_ativo, ultimo_calculo=True
+        ).values_list("pk", flat=True)
+    )
 
 
 def _agentes_com_designacao_ativa_periodo(
@@ -86,10 +81,16 @@ def _designacoes_anteriores_ativas_por_cargo(
     ultimo: CalculoModulo,
     cargo_ids: list[int],
 ) -> dict[int, list[Designacao]]:
-    calculo_anterior_qs = CalculoModulo.objects.filter(
-        escola_id=escola.pk,
-        data_calculo__lt=ultimo.data_calculo,
-    ).order_by("-data_calculo", "-id").values("id")[:1]
+    # Cálculo imediatamente anterior ao vigente no mesmo período (histórico de designação).
+    calculo_anterior_qs = (
+        CalculoModulo.objects.filter(
+            escola_id=escola.pk,
+            periodo_id=ultimo.periodo_id,
+        )
+        .exclude(pk=ultimo.pk)
+        .order_by("-data_calculo", "-id")
+        .values("id")[:1]
+    )
 
     anteriores_qs = (
         Designacao.objects.filter(

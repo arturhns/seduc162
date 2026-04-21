@@ -37,16 +37,19 @@ def _ultimo_calculo_para_exibicao(escola, periodo_ativo):
     """
     Retorna (último cálculo para prefill/resultados, cálculo salvo no período ativo).
 
-    Prioridade do último exibido: (1) período ativo; (2) qualquer outro período,
-    pelo `data_calculo` mais recente.
+    Prioridade do último exibido: (1) período ativo; (2) entre os marcados como
+    vigentes (`ultimo_calculo`), o de `data_calculo` mais recente.
     """
     if periodo_ativo:
         calc_ativo = CalculoModulo.get_ultimo_calculo(escola, periodo_ativo)
         if calc_ativo:
             return calc_ativo
 
-    u = CalculoModulo.objects.filter(escola=escola).order_by("-data_calculo").first()
-    return u
+    return (
+        CalculoModulo.objects.filter(escola=escola, ultimo_calculo=True)
+        .order_by("-data_calculo")
+        .first()
+    )
 
 
 def _botao_principal_label(escola, periodo_ativo) -> str:
@@ -148,8 +151,9 @@ class CalculoModuloListView(TemplateView):
                     CalculoModulo.objects.filter(
                         escola_id=OuterRef("pk"),
                         periodo=periodo_ativo,
+                        ultimo_calculo=True,
                     )
-                    .order_by("-data_calculo")
+                    .order_by("-pk")
                     .values("status_designacao")[:1]
                 )
                 escolas_qs = escolas_qs.annotate(
@@ -167,16 +171,12 @@ class CalculoModuloListView(TemplateView):
         ultimo_por_escola = {}
 
         if periodo_ativo is not None and escolas_pagina:
-            for calc in (
-                CalculoModulo.objects.filter(
-                    periodo=periodo_ativo,
-                    escola__in=escola_ids,
-                )
-                .order_by("escola_id", "-data_calculo")
-                .iterator()
+            for calc in CalculoModulo.objects.filter(
+                periodo=periodo_ativo,
+                escola__in=escola_ids,
+                ultimo_calculo=True,
             ):
-                if calc.escola_id not in ultimo_por_escola:
-                    ultimo_por_escola[calc.escola_id] = calc
+                ultimo_por_escola[calc.escola_id] = calc
 
         calculo_ids = [c.pk for c in ultimo_por_escola.values()]
         quantidades_por_calculo = defaultdict(list)
@@ -405,12 +405,17 @@ class CalculoModuloView(View):
 
     def _salvar(self, periodo, form, quantidades, prof, mat_cel):
         with transaction.atomic():
+            # Recálculo: só um cálculo vigente por escola no período (demais perdem a marca).
+            CalculoModulo.objects.filter(escola=self.escola, periodo=periodo).update(
+                ultimo_calculo=False
+            )
             calculo = CalculoModulo.objects.create(
                 escola=self.escola,
                 periodo=periodo,
                 matricula_ativa=form.cleaned_data["matricula_ativa"],
                 professores_dedicados=prof,
                 matricula_cel=mat_cel,
+                ultimo_calculo=True,
             )
             CalculoQuantidade.objects.bulk_create(
                 [

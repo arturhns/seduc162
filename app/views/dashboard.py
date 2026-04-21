@@ -7,16 +7,12 @@ from app.models import CalculoModulo, Cargo, Designacao, Escola, PeriodoProcessa
 
 
 def _ids_ultimos_calculos_no_periodo(periodo: PeriodoProcessamento) -> list[int]:
-    ultimo_por_escola: dict[int, int] = {}
-    for calc in (
-        CalculoModulo.objects.filter(periodo=periodo)
-        .order_by("escola_id", "-data_calculo", "-pk")
-        .iterator()
-    ):
-        eid = int(calc.escola_id)
-        if eid not in ultimo_por_escola:
-            ultimo_por_escola[eid] = int(calc.pk)
-    return list(ultimo_por_escola.values())
+    # Cálculo vigente por escola no período (`ultimo_calculo`).
+    return list(
+        CalculoModulo.objects.filter(periodo=periodo, ultimo_calculo=True).values_list(
+            "pk", flat=True
+        )
+    )
 
 
 class DashboardView(TemplateView):
@@ -53,8 +49,9 @@ class DashboardView(TemplateView):
             CalculoModulo.objects.filter(
                 escola_id=OuterRef("pk"),
                 periodo=periodo_ref,
+                ultimo_calculo=True,
             )
-            .order_by("-data_calculo", "-pk")
+            .order_by("-pk")
             .values("status_designacao")[:1]
         )
         designacoes_pendentes = (

@@ -18,7 +18,7 @@ def calculo_status_designacao(
     """
     Retorna: 0 pendente, 1 em andamento, 2 concluído.
 
-    Regras (último CalculoModulo do período):
+    Regras (CalculoModulo vigente do período, `ultimo_calculo=True`):
     - Concluído: todos os cargos de gestão (tipo gestão) com quantidade > 0 têm
       contagem de designações ativas (status=1) >= quantidade, sem excesso por
       cargo; AOE e ASE cobertos por ContratacaoTerceiro com situacao=1 (não por

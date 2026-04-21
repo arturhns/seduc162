@@ -17,6 +17,8 @@ class CalculoModulo(models.Model):
         default=0,
         verbose_name="Status da Designação",
     )
+    # Um único True por (escola, período): marca o cálculo vigente; recálculos zeram os demais da mesma escola no período.
+    ultimo_calculo = models.BooleanField(default=False, verbose_name="Último Cálculo")
 
     class Meta:
         db_table = "calculos_modulo"
@@ -26,11 +28,11 @@ class CalculoModulo(models.Model):
 
     @classmethod
     def get_ultimo_calculo(cls, escola, periodo):
-        """Retorna o cálculo mais recente (maior data_calculo) para a escola/período."""
+        """Retorna o cálculo vigente da escola no período (`ultimo_calculo=True`)."""
         if periodo is None:
             return None
         return (
-            cls.objects.filter(escola=escola, periodo=periodo)
-            .order_by("-data_calculo")
+            cls.objects.filter(escola=escola, periodo=periodo, ultimo_calculo=True)
+            .order_by("-pk")
             .first()
         )

@@ -28,18 +28,9 @@ def _periodo_padrao() -> PeriodoProcessamento | None:
 
 
 def _designacoes_queryset(periodo: PeriodoProcessamento):
-    ultimo_id_sq = Subquery(
-        CalculoModulo.objects.filter(
-            escola_id=OuterRef("calculo_modulo__escola_id"),
-            periodo_id=periodo.pk,
-        )
-        .order_by("-data_calculo", "-pk")
-        .values("pk")[:1]
-    )
     return (
         Designacao.objects.filter(calculo_modulo__periodo=periodo)
         .select_related("calculo_modulo", "calculo_modulo__escola", "agente", "cargo")
-        .annotate(_ultimo_calculo_periodo_id=ultimo_id_sq)
         .order_by("calculo_modulo__escola__nome", "-data_designacao", "-pk")
     )
 
