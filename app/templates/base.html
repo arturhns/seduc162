@@ -106,8 +106,8 @@
                 <i class="bi bi-calculator-fill me-2"></i>Cálculo do Módulo
             </a>
             
-            <a class="nav-link" 
-               href="#">
+            <a class="nav-link {% if request.resolver_match.namespace == 'relatorios' %}active{% endif %}"
+               href="{% url 'relatorios:designacao' %}">
                 <i class="bi bi-bar-chart-fill me-2"></i>Relatórios
             </a>
         </nav>
