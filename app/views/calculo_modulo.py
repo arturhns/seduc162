@@ -47,8 +47,8 @@ def _ultimo_calculo_para_exibicao(escola, periodo_ativo):
 
     return (
         CalculoModulo.objects.filter(escola=escola, ultimo_calculo=True)
-        .order_by("-data_calculo")
-        .first()
+            .order_by("-data_calculo")
+            .first()
     )
 
 
@@ -133,13 +133,13 @@ class CalculoModuloListView(TemplateView):
                 self._STATUS_PROCESSAMENTO_PENDENTE,
             ):
                 calculo_existe = CalculoModulo.objects.filter(
-                    escola_id=OuterRef("pk"), 
+                    escola_id=OuterRef("pk"),
                     periodo=periodo_ativo,
                 )
 
                 if busca_status_processamento == self._STATUS_PROCESSAMENTO_PROCESSADO:
                     escolas_qs = escolas_qs.filter(Exists(calculo_existe))
-                else:  
+                else:
                     escolas_qs = escolas_qs.filter(~Exists(calculo_existe))
 
             if busca_status_designacao in (
@@ -327,7 +327,12 @@ class CalculoModuloView(View):
             )
             return TemplateResponse(self.request, self.template_name, ctx)
 
-        ultimo = CalculoModulo.get_ultimo_calculo_periodo(self.escola, periodo_ativo)
+        ultimo = (
+            CalculoModulo.objects.filter(escola=self.escola)
+                .order_by("-data_calculo", "-id")
+                .first()
+        )
+
         form = CalculoModuloInputForm(
             request.POST,
             mostra_casa=self.mostra_casa,
@@ -380,11 +385,12 @@ class CalculoModuloView(View):
             )
 
         anterior_qs = []
+
         if ultimo:
             anterior_qs = list(
-                CalculoQuantidade.objects.filter(calculo_modulo=ultimo).select_related(
-                    "cargo"
-                )
+                CalculoQuantidade.objects.filter(
+                    calculo_modulo=ultimo
+                ).select_related("cargo")
             )
         diferencas = (
             _diferencas_quantidades(anterior_qs, quantidades) if anterior_qs else []

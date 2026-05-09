@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import Prefetch, Q, Subquery, OuterRef
+from django.db.models import Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.template.response import TemplateResponse
@@ -75,26 +75,24 @@ def _designacoes_ultimo_por_ultimo_status(
     out.sort(key=lambda x: (int(x.cargo_id), (x.agente.nome_completo or "").lower()))
     return out
 
-
 def _designacoes_anteriores_ativas_por_cargo(
     escola: Escola,
     ultimo: CalculoModulo,
     cargo_ids: list[int],
 ) -> dict[int, list[Designacao]]:
-    # Cálculo imediatamente anterior ao vigente no mesmo período (histórico de designação).
-    calculo_anterior_qs = (
-        CalculoModulo.objects.filter(
-            escola_id=escola.pk,
-            periodo_id=ultimo.periodo_id,
-        )
-        .exclude(pk=ultimo.pk)
-        .order_by("-data_calculo", "-id")
-        .values("id")[:1]
+    calculo_ref = (
+        CalculoModulo.objects.filter(escola_id=escola.pk)
+            .exclude(pk=ultimo.pk)
+            .order_by("-data_calculo", "-id")
+            .first()
     )
+
+    if calculo_ref is None:
+        return {}
 
     anteriores_qs = (
         Designacao.objects.filter(
-            calculo_modulo_id=Subquery(calculo_anterior_qs),  #
+            calculo_modulo_id=calculo_ref.pk,
             status=1,
             cargo_id__in=cargo_ids,
             cargo__tipo=Cargo.TIPO_GESTAO,
